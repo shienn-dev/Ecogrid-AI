@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Energi - EcoGrid AI</title>
+    <meta name="description"
+        content="Hitung konsumsi energi dan emisi karbon perangkat elektronik Anda dengan mudah menggunakan EcoGrid AI.">
+    <!-- Link to Google Fonts and FontAwesome for premium design -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <i class="fa-solid fa-leaf logo-icon"></i>
+                <h1>EcoGrid AI</h1>
+            </div>
+            <p class="subtitle">Kalkulator Pintar Konsumsi Energi Perangkat</p>
+        </header>
+
+        <main class="card">
+            <form id="energy-form" onsubmit="hitungEnergi(event)">
+                <!-- Input Nama Perangkat -->
+                <div class="form-group">
+                    <label for="device-name" class="form-label">Nama Perangkat</label>
+                    <div class="input-container">
+                        <i class="fa-solid fa-plug input-icon"></i>
+                        <input type="text" id="device-name" class="form-input" placeholder="Contoh: Kulkas, AC, TV"
+                            required>
+                    </div>
+                </div>
+
+                <!-- Input Watt -->
+                <div class="form-group">
+                    <label for="device-watt" class="form-label">Watt (Daya)</label>
+                    <div class="input-container">
+                        <i class="fa-solid fa-bolt input-icon"></i>
+                        <input type="number" id="device-watt" class="form-input" placeholder="Contoh: 150" min="1"
+                            required>
+                        <span class="input-badge">W</span>
+                    </div>
+                </div>
+
+                <!-- Input Jam/Hari -->
+                <div class="form-group">
+                    <label for="device-hours" class="form-label">Jam / Hari (Penggunaan)</label>
+                    <div class="input-container">
+                        <i class="fa-regular fa-clock input-icon"></i>
+                        <input type="number" id="device-hours" class="form-input" placeholder="Contoh: 8" min="0.1"
+                            max="24" step="any" required>
+                        <span class="input-badge">Jam</span>
+                    </div>
+                </div>
+
+                <!-- Tombol Hitung -->
+                <button type="submit" class="btn-submit" id="hitung-btn">
+                    <i class="fa-solid fa-calculator"></i>
+                    <span>Hitung</span>
+                </button>
+            </form>
+
+            <!-- Bagian Hasil Perhitungan (Tersembunyi Awalnya) -->
+            <div id="results" class="results-card">
+                <div class="results-title">
+                    <i class="fa-solid fa-chart-simple" style="color: var(--secondary);"></i>
+                    <span>Hasil Perhitungan</span>
+                </div>
+
+                <div class="results-grid">
+                    <div class="result-item">
+                        <div id="res-daily-kwh" class="result-val">0.00</div>
+                        <div class="result-lbl">KWH / HARI</div>
+                    </div>
+                    <div class="result-item">
+                        <div id="res-monthly-kwh" class="result-val">0.00</div>
+                        <div class="result-lbl">KWH / BULAN</div>
+                    </div>
+                    <div class="result-item">
+                        <div id="res-monthly-cost" class="result-val cost">Rp 0</div>
+                        <div class="result-lbl">BIAYA / BULAN</div>
+                    </div>
+                    <div class="result-item">
+                        <div id="res-co2" class="result-val" style="color: #ef4444;">0.00</div>
+                        <div class="result-lbl">KG CO2 / BULAN</div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <i class="fa-solid fa-lightbulb tip-icon"></i>
+                    <div class="tip-text">
+                        <strong id="tip-title">Tips Hemat Energi:</strong>
+                        <span id="tip-content">Matikan perangkat saat tidak digunakan dan pertimbangkan untuk
+                            menggunakan perangkat berlabel hemat energi.</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function hitungEnergi(event) {
+            event.preventDefault();
+
+            // Ambil nilai dari input
+            const name = document.getElementById('device-name').value;
+            const watt = parseFloat(document.getElementById('device-watt').value);
+            const hours = parseFloat(document.getElementById('device-hours').value);
+
+            // Validasi input
+            if (isNaN(watt) || isNaN(hours) || watt <= 0 || hours <= 0 || hours > 24) {
+                alert("Harap masukkan data watt dan jam dengan benar (Jam maksimal 24).");
+                return;
+            }
+
+            // Hitung energi
+            const dailyKwh = (watt * hours) / 1000;
+            const monthlyKwh = dailyKwh * 30;
+
+            // Tarif Listrik (R-1/TR 1300 VA ke atas per 2026 kurang lebih Rp 1.444,70)
+            const tariffPerKwh = 1444.70;
+            const monthlyCost = monthlyKwh * tariffPerKwh;
+
+            // Hitung Emisi Karbon (Faktor emisi rata-rata grid Indonesia: ~0.87 kg CO2 / kWh)
+            const co2Factor = 0.87;
+            const monthlyCo2 = monthlyKwh * co2Factor;
+
+            // Update UI dengan hasil perhitungan
+            document.getElementById('res-daily-kwh').innerText = dailyKwh.toFixed(2);
+            document.getElementById('res-monthly-kwh').innerText = monthlyKwh.toFixed(2);
+            document.getElementById('res-co2').innerText = monthlyCo2.toFixed(2);
+
+            // Format Rupiah
+            const formattedCost = new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(monthlyCost);
+
+            document.getElementById('res-monthly-cost').innerText = formattedCost.replace(/\s/g, ' ');
+
+            // Generate Tips Hemat Energi berdasarkan nama perangkat
+            let tipTitle = `Tips Hemat Energi:`;
+            let tipContent = "Matikan perangkat saat tidak digunakan dan pertimbangkan untuk menggunakan perangkat berlabel hemat energi.";
+
+            const nameLower = name.toLowerCase();
+            if (nameLower.includes('ac') || nameLower.includes('pendingin')) {
+                tipContent = "Atur suhu AC pada 24°C - 25°C. Setiap kenaikan 1°C pengaturan suhu dapat menghemat energi hingga 6%.";
+            } else if (nameLower.includes('kulkas') || nameLower.includes('lemari es')) {
+                tipContent = "Pastikan pintu tertutup rapat, hindari memasukkan makanan panas, dan bersihkan kondensor belakang secara teratur.";
+            } else if (nameLower.includes('tv') || nameLower.includes('televisi')) {
+                tipContent = "Cabut kabel daya sepenuhnya saat tidak digunakan untuk menghindari konsumsi daya siaga (standby power).";
+            } else if (nameLower.includes('lampu')) {
+                tipContent = "Gunakan lampu LED berkualitas tinggi yang menghemat konsumsi energi hingga 80-90% dibandingkan lampu pijar lama.";
+            } else if (nameLower.includes('mesin cuci')) {
+                tipContent = "Gunakan mode pencucian ekonomis dan cuci dalam kapasitas penuh untuk memaksimalkan efisiensi listrik.";
+            }
+
+            document.getElementById('tip-title').innerText = tipTitle;
+            document.getElementById('tip-content').innerText = tipContent;
+
+            // Tampilkan bagian hasil dengan animasi smooth
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'block';
+
+            // Scroll ke bagian hasil secara halus
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+
+</html>
