@@ -22,153 +22,514 @@
             <p class="subtitle">Kalkulator Pintar Konsumsi Energi Perangkat</p>
         </header>
 
-        <main class="card">
-            <form id="energy-form" onsubmit="hitungEnergi(event)">
+        <main class="app-layout">
+            <!-- Panel Input (Kiri) -->
+            <section class="card input-panel">
+                <form id="energy-form" onsubmit="hitungEnergi(event)">
+                    <!-- Tempat baris perangkat dinamis akan disisipkan -->
+                    <div id="device-list"></div>
+
+                    <!-- Tombol Tambah Perangkat -->
+                    <button type="button" class="btn-add-device" onclick="addDeviceRow()">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Tambah Perangkat</span>
+                    </button>
+
+                    <!-- Tombol Hitung -->
+                    <button type="submit" class="btn-submit" id="hitung-btn">
+                        <i class="fa-solid fa-calculator"></i>
+                        <span>Hitung</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Panel Output Hasil (Kanan) -->
+            <section class="card output-panel">
+                <!-- Placeholder State (Sebelum ada kalkulasi) -->
+                <div id="results-placeholder" class="placeholder-state">
+                    <i class="fa-solid fa-chart-line placeholder-icon"></i>
+                    <h3>Belum Ada Hasil Perhitungan</h3>
+                    <p>Masukkan data perangkat elektronik Anda di panel kiri dan klik tombol <strong>Hitung</strong> untuk memproses analisis konsumsi energi harian, bulanan, tahunan, skor efisiensi, dan tips hemat energi.</p>
+                </div>
+
+                <!-- Bagian Hasil Perhitungan (Tersembunyi Awalnya) -->
+                <div id="results" class="results-card" style="display: none;">
+                    <div class="results-title">
+                        <i class="fa-solid fa-chart-simple" style="color: var(--secondary);"></i>
+                        <span>Hasil Perhitungan</span>
+                    </div>
+
+                    <!-- Tabel Perbandingan Hasil (Daily, Monthly, Yearly) -->
+                    <div class="results-table-container">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Periode</th>
+                                    <th>Konsumsi (kWh)</th>
+                                    <th>Biaya Listrik</th>
+                                    <th>Emisi CO₂</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Harian</td>
+                                    <td id="res-daily-kwh" class="res-val-kwh">0.00</td>
+                                    <td id="res-daily-cost" class="res-val-cost">Rp 0</td>
+                                    <td id="res-daily-co2" class="res-val-co2">0.00 kg</td>
+                                </tr>
+                                <tr>
+                                    <td>Bulanan</td>
+                                    <td id="res-monthly-kwh" class="res-val-kwh">0.00</td>
+                                    <td id="res-monthly-cost" class="res-val-cost">Rp 0</td>
+                                    <td id="res-monthly-co2" class="res-val-co2">0.00 kg</td>
+                                </tr>
+                                <tr>
+                                    <td>Tahunan</td>
+                                    <td id="res-yearly-kwh" class="res-val-kwh">0.00</td>
+                                    <td id="res-yearly-cost" class="res-val-cost">Rp 0</td>
+                                    <td id="res-yearly-co2" class="res-val-co2">0.00 kg</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Peringkat Konsumsi Energi Perangkat -->
+                    <div class="ranking-section">
+                        <div class="ranking-title">
+                            <i class="fa-solid fa-fire-flame-simple" style="color: #ef4444;"></i>
+                            <span>Peringkat Konsumsi Energi Perangkat</span>
+                        </div>
+                        <div id="ranking-list" class="ranking-list">
+                            <!-- Diisi secara dinamis melalui JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Rekomendasi & Analisis (Energy Score & Insights) -->
+                    <div class="dashboard-grid">
+                        <!-- Energy Score Card -->
+                        <div class="score-card">
+                            <span class="score-title">Energy Score</span>
+                            <div class="score-value" id="energy-score-val">0</div>
+                            <span class="score-category-badge" id="energy-score-category">-</span>
+                        </div>
+
+                        <!-- Smart Insights Card (Insight Engine Cards) -->
+                        <div class="insights-card">
+                            <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary);"></i>
+                                <span>Rekomendasi & Analisis</span>
+                            </div>
+                            <div id="insights-container" class="insights-container">
+                                <!-- Diisi secara dinamis berupa kartu rekomendasi oleh JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tip-box" style="margin-top: 1.5rem;">
+                        <i class="fa-solid fa-lightbulb tip-icon"></i>
+                        <div class="tip-text">
+                            <strong id="tip-title">Tips Hemat Energi:</strong>
+                            <span id="tip-content">Matikan perangkat saat tidak digunakan dan pertimbangkan untuk
+                                menggunakan perangkat berlabel hemat energi.</span>
+                        </div>
+                    </div>
+
+                    <!-- Fitur 4 - Energy Flow Visualization -->
+                    <div class="flow-visualization-section" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--card-border);">
+                        <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-route" style="color: var(--primary);"></i>
+                            <span>Visualisasi Alur Pemrosesan Data (Energy Flow)</span>
+                        </div>
+                        <div class="flow-container">
+                            <div class="flow-step">
+                                <i class="fa-solid fa-house flow-icon"></i>
+                                <span class="flow-label">Rumah</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right flow-arrow"></i>
+                            <div class="flow-step">
+                                <i class="fa-solid fa-bolt-lightning flow-icon"></i>
+                                <span class="flow-label">Total Energi</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right flow-arrow"></i>
+                            <div class="flow-step">
+                                <i class="fa-solid fa-plug flow-icon"></i>
+                                <span class="flow-label">Perangkat</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right flow-arrow"></i>
+                            <div class="flow-step">
+                                <i class="fa-solid fa-money-bill-wave flow-icon"></i>
+                                <span class="flow-label">Biaya Listrik</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right flow-arrow"></i>
+                            <div class="flow-step">
+                                <i class="fa-solid fa-cloud-sun flow-icon"></i>
+                                <span class="flow-label">Emisi Karbon</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right flow-arrow"></i>
+                            <div class="flow-step">
+                                <i class="fa-solid fa-lightbulb flow-icon"></i>
+                                <span class="flow-label">Insight</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let deviceCount = 0;
+
+        function addDeviceRow() {
+            deviceCount++;
+            const container = document.getElementById('device-list');
+            
+            const deviceCard = document.createElement('div');
+            deviceCard.className = 'device-item-card';
+            deviceCard.id = `device-card-${deviceCount}`;
+            
+            deviceCard.innerHTML = `
+                <div class="device-header">
+                    <span class="device-title">
+                        <i class="fa-solid fa-plug"></i> Perangkat #${deviceCount}
+                    </span>
+                    <button type="button" class="btn-remove-device" onclick="removeDeviceRow(${deviceCount})" title="Hapus Perangkat">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+                
                 <!-- Input Nama Perangkat -->
                 <div class="form-group">
-                    <label for="device-name" class="form-label">Nama Perangkat</label>
+                    <label class="form-label">Nama Perangkat</label>
                     <div class="input-container">
                         <i class="fa-solid fa-plug input-icon"></i>
-                        <input type="text" id="device-name" class="form-input" placeholder="Contoh: Kulkas, AC, TV"
-                            required>
+                        <input type="text" class="form-input device-name" placeholder="Contoh: Kulkas, AC, TV" required>
                     </div>
                 </div>
 
                 <!-- Input Watt -->
                 <div class="form-group">
-                    <label for="device-watt" class="form-label">Watt (Daya)</label>
+                    <label class="form-label">Watt (Daya)</label>
                     <div class="input-container">
                         <i class="fa-solid fa-bolt input-icon"></i>
-                        <input type="number" id="device-watt" class="form-input" placeholder="Contoh: 150" min="1"
-                            required>
+                        <input type="number" class="form-input device-watt" placeholder="Contoh: 150" min="0.1" step="any" required>
                         <span class="input-badge">W</span>
                     </div>
                 </div>
 
                 <!-- Input Jam/Hari -->
                 <div class="form-group">
-                    <label for="device-hours" class="form-label">Jam / Hari (Penggunaan)</label>
+                    <label class="form-label">Jam / Hari (Penggunaan)</label>
                     <div class="input-container">
                         <i class="fa-regular fa-clock input-icon"></i>
-                        <input type="number" id="device-hours" class="form-input" placeholder="Contoh: 8" min="0.1"
-                            max="24" step="any" required>
+                        <input type="number" class="form-input device-hours" placeholder="Contoh: 8" min="0.01" max="24" step="any" required>
                         <span class="input-badge">Jam</span>
                     </div>
                 </div>
+            `;
+            
+            container.appendChild(deviceCard);
+            updateRemoveButtonsVisibility();
+        }
 
-                <!-- Tombol Hitung -->
-                <button type="submit" class="btn-submit" id="hitung-btn">
-                    <i class="fa-solid fa-calculator"></i>
-                    <span>Hitung</span>
-                </button>
-            </form>
+        function removeDeviceRow(id) {
+            const card = document.getElementById(`device-card-${id}`);
+            if (card) {
+                card.remove();
+                reindexDevices();
+            }
+        }
 
-            <!-- Bagian Hasil Perhitungan (Tersembunyi Awalnya) -->
-            <div id="results" class="results-card">
-                <div class="results-title">
-                    <i class="fa-solid fa-chart-simple" style="color: var(--secondary);"></i>
-                    <span>Hasil Perhitungan</span>
-                </div>
+        function reindexDevices() {
+            const cards = document.querySelectorAll('.device-item-card');
+            deviceCount = 0;
+            cards.forEach((card, index) => {
+                deviceCount = index + 1;
+                card.id = `device-card-${deviceCount}`;
+                const titleSpan = card.querySelector('.device-title');
+                titleSpan.innerHTML = `<i class="fa-solid fa-plug"></i> Perangkat #${deviceCount}`;
+                
+                const removeBtn = card.querySelector('.btn-remove-device');
+                if (removeBtn) {
+                    removeBtn.setAttribute('onclick', `removeDeviceRow(${deviceCount})`);
+                }
+            });
+            updateRemoveButtonsVisibility();
+        }
 
-                <div class="results-grid">
-                    <div class="result-item">
-                        <div id="res-daily-kwh" class="result-val">0.00</div>
-                        <div class="result-lbl">KWH / HARI</div>
-                    </div>
-                    <div class="result-item">
-                        <div id="res-monthly-kwh" class="result-val">0.00</div>
-                        <div class="result-lbl">KWH / BULAN</div>
-                    </div>
-                    <div class="result-item">
-                        <div id="res-monthly-cost" class="result-val cost">Rp 0</div>
-                        <div class="result-lbl">BIAYA / BULAN</div>
-                    </div>
-                    <div class="result-item">
-                        <div id="res-co2" class="result-val" style="color: #ef4444;">0.00</div>
-                        <div class="result-lbl">KG CO2 / BULAN</div>
-                    </div>
-                </div>
+        function updateRemoveButtonsVisibility() {
+            const cards = document.querySelectorAll('.device-item-card');
+            cards.forEach(card => {
+                const removeBtn = card.querySelector('.btn-remove-device');
+                if (removeBtn) {
+                    if (cards.length <= 1) {
+                        removeBtn.style.display = 'none';
+                    } else {
+                        removeBtn.style.display = 'flex';
+                    }
+                }
+            });
+        }
 
-                <div class="tip-box">
-                    <i class="fa-solid fa-lightbulb tip-icon"></i>
-                    <div class="tip-text">
-                        <strong id="tip-title">Tips Hemat Energi:</strong>
-                        <span id="tip-content">Matikan perangkat saat tidak digunakan dan pertimbangkan untuk
-                            menggunakan perangkat berlabel hemat energi.</span>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
+        // Tambahkan satu form perangkat di awal
+        document.addEventListener('DOMContentLoaded', () => {
+            addDeviceRow();
+        });
 
-    <script>
-        function hitungEnergi(event) {
+        async function hitungEnergi(event) {
             event.preventDefault();
 
-            // Ambil nilai dari input
-            const name = document.getElementById('device-name').value;
-            const watt = parseFloat(document.getElementById('device-watt').value);
-            const hours = parseFloat(document.getElementById('device-hours').value);
+            // Ambil semua elemen input perangkat
+            const deviceCards = document.querySelectorAll('.device-item-card');
+            const devices = [];
 
-            // Validasi input
-            if (isNaN(watt) || isNaN(hours) || watt <= 0 || hours <= 0 || hours > 24) {
-                alert("Harap masukkan data watt dan jam dengan benar (Jam maksimal 24).");
+            for (const card of deviceCards) {
+                const name = card.querySelector('.device-name').value.trim();
+                const wattVal = card.querySelector('.device-watt').value;
+                const hoursVal = card.querySelector('.device-hours').value;
+
+                // Validasi data input di frontend
+                if (!name) {
+                    alert("Nama perangkat tidak boleh kosong.");
+                    return;
+                }
+                const watt = parseFloat(wattVal);
+                if (isNaN(watt) || watt <= 0) {
+                    alert(`Daya (Watt) untuk perangkat '${name}' harus bernilai lebih dari 0.`);
+                    return;
+                }
+                const hours = parseFloat(hoursVal);
+                if (isNaN(hours) || hours <= 0 || hours > 24) {
+                    alert(`Jam penggunaan untuk perangkat '${name}' harus bernilai antara 0.01 hingga 24 jam.`);
+                    return;
+                }
+
+                devices.push({
+                    device_name: name,
+                    watt: watt,
+                    hours_per_day: hours
+                });
+            }
+
+            if (devices.length === 0) {
+                alert("Harap tambahkan minimal satu perangkat.");
                 return;
             }
 
-            // Hitung energi
-            const dailyKwh = (watt * hours) / 1000;
-            const monthlyKwh = dailyKwh * 30;
+            // Elemen tombol submit untuk status loading
+            const submitBtn = document.getElementById('hitung-btn');
+            const originalBtnHtml = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Menghitung...</span>';
 
-            // Tarif Listrik (R-1/TR 1300 VA ke atas per 2026 kurang lebih Rp 1.444,70)
-            const tariffPerKwh = 1444.70;
-            const monthlyCost = monthlyKwh * tariffPerKwh;
+            try {
+                // 1. Panggil API Energy
+                const energyRes = await fetch('http://127.0.0.1:5000/api/energy/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ devices: devices })
+                });
 
-            // Hitung Emisi Karbon (Faktor emisi rata-rata grid Indonesia: ~0.87 kg CO2 / kWh)
-            const co2Factor = 0.87;
-            const monthlyCo2 = monthlyKwh * co2Factor;
+                if (!energyRes.ok) {
+                    const errData = await energyRes.json();
+                    throw new Error(errData.message || "Gagal menghitung konsumsi energi.");
+                }
 
-            // Update UI dengan hasil perhitungan
-            document.getElementById('res-daily-kwh').innerText = dailyKwh.toFixed(2);
-            document.getElementById('res-monthly-kwh').innerText = monthlyKwh.toFixed(2);
-            document.getElementById('res-co2').innerText = monthlyCo2.toFixed(2);
+                const energyResult = await energyRes.json();
+                const totalDailyKwh = energyResult.data.total_daily_kwh;
+                const totalMonthlyKwh = energyResult.data.total_monthly_kwh;
+                const totalYearlyKwh = energyResult.data.total_yearly_kwh;
+                const rankedDevices = energyResult.data.ranked_devices;
 
-            // Format Rupiah
-            const formattedCost = new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(monthlyCost);
+                // 2. Panggil API Cost dan Carbon secara paralel dengan data multi-periode
+                const [costRes, carbonRes] = await Promise.all([
+                    fetch('http://127.0.0.1:5000/api/cost/calculate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            daily_kwh: totalDailyKwh,
+                            monthly_kwh: totalMonthlyKwh,
+                            yearly_kwh: totalYearlyKwh
+                        })
+                    }),
+                    fetch('http://127.0.0.1:5000/api/carbon/calculate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            daily_kwh: totalDailyKwh,
+                            monthly_kwh: totalMonthlyKwh,
+                            yearly_kwh: totalYearlyKwh
+                        })
+                    })
+                ]);
 
-            document.getElementById('res-monthly-cost').innerText = formattedCost.replace(/\s/g, ' ');
+                if (!costRes.ok) {
+                    const errData = await costRes.json();
+                    throw new Error(errData.message || "Gagal menghitung perkiraan biaya.");
+                }
 
-            // Generate Tips Hemat Energi berdasarkan nama perangkat
-            let tipTitle = `Tips Hemat Energi:`;
-            let tipContent = "Matikan perangkat saat tidak digunakan dan pertimbangkan untuk menggunakan perangkat berlabel hemat energi.";
+                if (!carbonRes.ok) {
+                    const errData = await carbonRes.json();
+                    throw new Error(errData.message || "Gagal menghitung emisi karbon.");
+                }
 
-            const nameLower = name.toLowerCase();
-            if (nameLower.includes('ac') || nameLower.includes('pendingin')) {
-                tipContent = "Atur suhu AC pada 24°C - 25°C. Setiap kenaikan 1°C pengaturan suhu dapat menghemat energi hingga 6%.";
-            } else if (nameLower.includes('kulkas') || nameLower.includes('lemari es')) {
-                tipContent = "Pastikan pintu tertutup rapat, hindari memasukkan makanan panas, dan bersihkan kondensor belakang secara teratur.";
-            } else if (nameLower.includes('tv') || nameLower.includes('televisi')) {
-                tipContent = "Cabut kabel daya sepenuhnya saat tidak digunakan untuk menghindari konsumsi daya siaga (standby power).";
-            } else if (nameLower.includes('lampu')) {
-                tipContent = "Gunakan lampu LED berkualitas tinggi yang menghemat konsumsi energi hingga 80-90% dibandingkan lampu pijar lama.";
-            } else if (nameLower.includes('mesin cuci')) {
-                tipContent = "Gunakan mode pencucian ekonomis dan cuci dalam kapasitas penuh untuk memaksimalkan efisiensi listrik.";
+                const costResult = await costRes.json();
+                const carbonResult = await carbonRes.json();
+
+                const costData = costResult.data;
+                const carbonData = carbonResult.data;
+
+                // Update UI dengan hasil perhitungan dari backend
+                // Konsumsi kWh
+                document.getElementById('res-daily-kwh').innerText = totalDailyKwh.toFixed(2);
+                document.getElementById('res-monthly-kwh').innerText = totalMonthlyKwh.toFixed(2);
+                document.getElementById('res-yearly-kwh').innerText = totalYearlyKwh.toFixed(2);
+
+                // Format Rupiah
+                const formatRupiah = (val) => new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(val).replace(/\s/g, ' ');
+
+                document.getElementById('res-daily-cost').innerText = formatRupiah(costData.daily_cost);
+                document.getElementById('res-monthly-cost').innerText = formatRupiah(costData.monthly_cost);
+                document.getElementById('res-yearly-cost').innerText = formatRupiah(costData.yearly_cost);
+
+                // Emisi Karbon
+                document.getElementById('res-daily-co2').innerText = `${carbonData.daily_carbon_kg.toFixed(2)} kg`;
+                document.getElementById('res-monthly-co2').innerText = `${carbonData.monthly_carbon_kg.toFixed(2)} kg`;
+                document.getElementById('res-yearly-co2').innerText = `${carbonData.yearly_carbon_kg.toFixed(2)} kg`;
+
+                // Render Daftar Ranking Perangkat
+                const rankingList = document.getElementById('ranking-list');
+                rankingList.innerHTML = '';
+
+                rankedDevices.forEach((device, index) => {
+                    const pct = device.contribution_percentage;
+                    let progressClass = 'progress-low';
+                    
+                    if (pct > 50) {
+                        progressClass = 'progress-high';
+                    } else if (pct > 20) {
+                        progressClass = 'progress-medium';
+                    }
+
+                    const item = document.createElement('div');
+                    item.className = 'ranking-item';
+                    item.innerHTML = `
+                        <div class="ranking-item-info">
+                            <span class="ranking-item-name">#${index + 1} ${device.device_name}</span>
+                            <span class="ranking-item-pct">${device.monthly_kwh.toFixed(2)} kWh/bln (${pct.toFixed(1)}%)</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill ${progressClass}" style="width: 0%"></div>
+                        </div>
+                    `;
+                    rankingList.appendChild(item);
+
+                    // Memicu animasi progress bar secara mulus
+                    setTimeout(() => {
+                        const fill = item.querySelector('.progress-bar-fill');
+                        if (fill) fill.style.width = `${pct}%`;
+                    }, 50);
+                });
+
+                // Update Energy Score dan Rekomendasi Insights dari Backend
+                const energyScore = energyResult.data.energy_score;
+                const scoreCategory = energyResult.data.category;
+                const insights = energyResult.data.insights;
+
+                document.getElementById('energy-score-val').innerText = energyScore;
+                
+                const categoryEl = document.getElementById('energy-score-category');
+                categoryEl.innerText = scoreCategory;
+                categoryEl.className = 'score-category-badge'; // reset class
+                
+                if (scoreCategory === 'Excellent') {
+                    categoryEl.classList.add('badge-excellent');
+                } else if (scoreCategory === 'Good') {
+                    categoryEl.classList.add('badge-good');
+                } else if (scoreCategory === 'Average') {
+                    categoryEl.classList.add('badge-average');
+                } else {
+                    categoryEl.classList.add('badge-needs-improvement');
+                }
+
+                // Render Kartu Rekomendasi/Insights (Insight Engine)
+                const insightsContainer = document.getElementById('insights-container');
+                insightsContainer.innerHTML = '';
+                
+                if (insights && insights.length > 0) {
+                    insights.forEach(insight => {
+                        const card = document.createElement('div');
+                        card.className = `insight-card-item type-${insight.type}`;
+                        card.innerHTML = `
+                            <div class="insight-card-header">
+                                <i class="${insight.icon}"></i>
+                                <span>${insight.title}</span>
+                            </div>
+                            <p>${insight.description}</p>
+                        `;
+                        insightsContainer.appendChild(card);
+                    });
+                } else {
+                    const emptyCard = document.createElement('div');
+                    emptyCard.className = 'insight-card-item type-success';
+                    emptyCard.innerHTML = `
+                        <div class="insight-card-header">
+                            <i class="fa-solid fa-leaf"></i>
+                            <span>Efisiensi Optimal</span>
+                        </div>
+                        <p>Tidak ada rekomendasi khusus saat ini. Penggunaan energi Anda tergolong normal.</p>
+                    `;
+                    insightsContainer.appendChild(emptyCard);
+                }
+
+                // Generate Tips Hemat Energi berdasarkan perangkat yang paling boros
+                let tipTitle = `Tips Hemat Energi:`;
+                let tipContent = "Matikan perangkat saat tidak digunakan dan pertimbangkan untuk menggunakan perangkat berlabel hemat energi.";
+
+                if (rankedDevices.length > 0) {
+                    const mostWasteful = rankedDevices[0].device_name.toLowerCase();
+                    tipTitle = `Tips Hemat Energi (${rankedDevices[0].device_name}):`;
+                    
+                    if (mostWasteful.includes('ac') || mostWasteful.includes('pendingin')) {
+                        tipContent = "Atur suhu AC pada 24°C - 25°C. Setiap kenaikan 1°C pengaturan suhu dapat menghemat energi hingga 6%.";
+                    } else if (mostWasteful.includes('kulkas') || mostWasteful.includes('lemari es')) {
+                        tipContent = "Pastikan pintu tertutup rapat, hindari memasukkan makanan panas, dan bersihkan kondensor belakang secara teratur.";
+                    } else if (mostWasteful.includes('tv') || mostWasteful.includes('televisi')) {
+                        tipContent = "Cabut kabel daya sepenuhnya saat tidak digunakan untuk menghindari konsumsi daya siaga (standby power).";
+                    } else if (mostWasteful.includes('lampu')) {
+                        tipContent = "Gunakan lampu LED berkualitas tinggi yang menghemat konsumsi energi hingga 80-90% dibandingkan lampu pijar lama.";
+                    } else if (mostWasteful.includes('mesin cuci')) {
+                        tipContent = "Gunakan mode pencucian ekonomis dan cuci dalam kapasitas penuh untuk memaksimalkan efisiensi listrik.";
+                    }
+                }
+
+                document.getElementById('tip-title').innerText = tipTitle;
+                document.getElementById('tip-content').innerText = tipContent;
+
+                // Sembunyikan placeholder dan tampilkan hasil
+                const placeholderDiv = document.getElementById('results-placeholder');
+                if (placeholderDiv) placeholderDiv.style.display = 'none';
+
+                // Tampilkan bagian hasil dengan animasi smooth
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.style.display = 'block';
+
+                // Scroll ke bagian hasil secara halus
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } catch (error) {
+                console.error("Calculation Error:", error);
+                alert("Kesalahan perhitungan: " + error.message);
+            } finally {
+                // Kembalikan tombol ke keadaan semula
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
             }
-
-            document.getElementById('tip-title').innerText = tipTitle;
-            document.getElementById('tip-content').innerText = tipContent;
-
-            // Tampilkan bagian hasil dengan animasi smooth
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.style.display = 'block';
-
-            // Scroll ke bagian hasil secara halus
-            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     </script>
 </body>

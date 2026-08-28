@@ -1,10 +1,13 @@
-from flask import Flask
+import os
+import sys
 
-app = Flask(__name__)
+# Memastikan direktori backend terdaftar di sys.path agar import modul 'app' berjalan lancar
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-@app.route("/")
-def home():
-    return {"message": "EcoGrid AI API Running"}
+from app import create_app
+
+app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Menjalankan Flask di port 5000 dengan mode debug aktif
+    app.run(debug=True, host="127.0.0.1", port=5000)
