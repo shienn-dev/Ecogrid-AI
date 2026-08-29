@@ -112,6 +112,32 @@
   .config-col { position: sticky; top: calc(var(--header-h) + 24px); }
 }
 
+/* NEW: Top config — device wide + side stack, results below */
+.top-config-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  align-items: start;
+  margin-bottom: var(--space-6);
+}
+@media (min-width: 1024px) {
+  .top-config-grid {
+    grid-template-columns: 1fr 380px;
+    gap: var(--space-6);
+  }
+}
+.side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.device-config-wide .card-pad {
+  padding-bottom: var(--space-4);
+}
+.results-below {
+  display: block;
+}
+
 /* Sub-grid for KPI */
 .kpi-grid {
   display: grid;

@@ -173,6 +173,53 @@
 }
 .btn-remove:hover { background: var(--danger-bg); border-color: var(--danger-border); }
 
+/* Device slider — horizontal (2-3 visible, scroll) */
+.device-slider-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.device-slider {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 8px 4px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  flex: 1;
+  scroll-behavior: smooth;
+}
+.device-slider::-webkit-scrollbar { height: 6px; }
+.device-slider::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 9999px; }
+.device-slider::-webkit-scrollbar-track { background: transparent; }
+.device-slider .device-card {
+  flex: 0 0 340px;
+  min-width: 340px;
+  max-width: 340px;
+  scroll-snap-align: start;
+  margin-bottom: 0;
+}
+.slider-nav {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+.slider-nav:hover { background: var(--surface-2); color: var(--text); }
+@media (max-width: 640px) {
+  .device-slider .device-card { flex: 0 0 280px; min-width: 280px; max-width: 280px; }
+  .slider-nav { display: none; }
+}
+
 /* KPI Card */
 .kpi {
   background: var(--surface);

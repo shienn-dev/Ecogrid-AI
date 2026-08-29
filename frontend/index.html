@@ -44,94 +44,101 @@
     <p class="page-desc">Kelola perangkat, pahami konsumsi, biaya, dan jejak karbon Anda dalam satu tampilan profesional. Data-first, akurat, dan dapat ditindaklanjuti.</p>
   </div>
 
-  <main class="container app-grid" id="top">
-    <!-- Config column -->
-    <section class="config-col" aria-labelledby="config-heading">
-      <div class="card">
+  <main class="container" id="top">
+    <!-- TOP: Device Config (wide) + Side (Solar + History) -->
+    <section class="top-config-grid" aria-label="Konfigurasi">
+      <!-- Device Config — melebar kesamping, slider -->
+      <div class="card device-config-wide" aria-labelledby="config-heading">
         <div class="card-pad">
           <div class="card-header">
             <h2 id="config-heading" class="card-title"><i class="fa-solid fa-sliders"></i> Konfigurasi Perangkat</h2>
-            <span class="card-subtitle">Input harian</span>
+            <span class="card-subtitle">Geser untuk lihat semua — 2–3 terlihat</span>
           </div>
-          <p class="help" style="margin-bottom:16px">Tambahkan perangkat elektronik, atur daya (Watt) dan durasi per hari (Jam). Klik <strong>Hitung</strong> untuk analitik lengkap.</p>
+          <p class="help" style="margin-bottom:12px">Tambahkan perangkat, atur daya dan jam. Daftar melebar kesamping, geser/scroll untuk melihat semua perangkat.</p>
 
           <form id="energy-form" novalidate>
-            <div id="device-list" role="list" aria-label="Daftar perangkat"></div>
-
-            <button type="button" id="btn-add-device" class="btn btn-secondary btn-block" style="margin-bottom:12px">
-              <i class="fa-solid fa-plus"></i> Tambah Perangkat
-            </button>
-
-            <div style="display:flex; gap:8px; margin-bottom:12px">
-              <button type="button" id="btn-sample" class="btn btn-ghost" style="flex:1"><i class="fa-solid fa-wand-magic-sparkles"></i> Contoh</button>
-              <button type="submit" id="hitung-btn" class="btn btn-primary" style="flex:2"><i class="fa-solid fa-calculator"></i> Hitung</button>
+            <!-- Slider container -->
+            <div class="device-slider-wrap">
+              <button type="button" class="slider-nav slider-prev" aria-label="Geser kiri" onclick="document.getElementById('device-list').scrollBy({left:-360,behavior:'smooth'})"><i class="fa-solid fa-chevron-left"></i></button>
+              <div id="device-list" class="device-slider" role="list" aria-label="Daftar perangkat"></div>
+              <button type="button" class="slider-nav slider-next" aria-label="Geser kanan" onclick="document.getElementById('device-list').scrollBy({left:360,behavior:'smooth'})"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
 
-            <p class="help"><i class="fa-solid fa-circle-info"></i> Validasi ketat: nama wajib, Watt &gt;0, Jam 0.01–24. Maks 50 perangkat.</p>
+            <div style="display:flex; gap:8px; margin-top:14px; align-items:center">
+              <button type="button" id="btn-add-device" class="btn btn-secondary" style="flex:1">
+                <i class="fa-solid fa-plus"></i> Tambah Perangkat
+              </button>
+              <button type="button" id="btn-sample" class="btn btn-ghost" style="flex:1"><i class="fa-solid fa-wand-magic-sparkles"></i> Contoh</button>
+              <button type="submit" id="hitung-btn" class="btn btn-primary" style="flex:1.2"><i class="fa-solid fa-calculator"></i> Hitung</button>
+            </div>
+            <p class="help" style="margin-top:10px"><i class="fa-solid fa-circle-info"></i> Validasi ketat: nama wajib, Watt &gt;0, Jam 0.01–24. Maks 50 perangkat.</p>
           </form>
         </div>
       </div>
 
-      <!-- Solar quick -->
-      <div class="card" id="solar" style="margin-top:16px">
-        <div class="card-pad">
-          <div class="card-header">
-            <h2 class="card-title"><i class="fa-solid fa-solar-panel"></i> Simulasi Surya</h2>
-            <span class="card-subtitle">Estimasi</span>
-          </div>
-          <div id="solar-panel">
-            <div class="field">
-              <label class="label" for="solar-roof">Luas atap (m²)</label>
-              <div class="input-wrap">
-                <i class="fa-solid fa-ruler-combined input-icon"></i>
-                <input id="solar-roof" class="input" type="number" min="1" max="1000" step="1" value="40" />
-                <span class="input-badge">m²</span>
+      <!-- Side stack: Solar (atas) + Riwayat (bawah) -->
+      <div class="side-stack">
+        <!-- Solar quick -->
+        <div class="card" id="solar">
+          <div class="card-pad">
+            <div class="card-header">
+              <h2 class="card-title"><i class="fa-solid fa-solar-panel"></i> Simulasi Surya</h2>
+              <span class="card-subtitle">Estimasi</span>
+            </div>
+            <div id="solar-panel">
+              <div class="field">
+                <label class="label" for="solar-roof">Luas atap (m²)</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-ruler-combined input-icon"></i>
+                  <input id="solar-roof" class="input" type="number" min="1" max="1000" step="1" value="40" />
+                  <span class="input-badge">m²</span>
+                </div>
               </div>
-            </div>
-            <div class="field">
-              <label class="label" for="solar-eff">Efisiensi panel</label>
-              <select id="solar-eff" class="input" style="padding-left:12px">
-                <option value="0.15">15% — Polycrystalline</option>
-                <option value="0.18">18% — Mono Standar</option>
-                <option value="0.20" selected>20% — Mono Premium</option>
-                <option value="0.22">22% — High Efficiency</option>
-              </select>
-            </div>
-            <div class="field">
-              <label class="label" for="solar-sun">Peak Sun Hours</label>
-              <div class="input-wrap">
-                <i class="fa-solid fa-sun input-icon"></i>
-                <input id="solar-sun" class="input" type="number" min="1" max="10" step="0.1" value="4.5" />
-                <span class="input-badge">jam</span>
+              <div class="field">
+                <label class="label" for="solar-eff">Efisiensi panel</label>
+                <select id="solar-eff" class="input" style="padding-left:12px">
+                  <option value="0.15">15% — Polycrystalline</option>
+                  <option value="0.18">18% — Mono Standar</option>
+                  <option value="0.20" selected>20% — Mono Premium</option>
+                  <option value="0.22">22% — High Efficiency</option>
+                </select>
               </div>
-              <div class="help">Preset: Jakarta 4.5 · Surabaya 5.0 · Kupang 5.5</div>
+              <div class="field">
+                <label class="label" for="solar-sun">Peak Sun Hours</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-sun input-icon"></i>
+                  <input id="solar-sun" class="input" type="number" min="1" max="10" step="0.1" value="4.5" />
+                  <span class="input-badge">jam</span>
+                </div>
+                <div class="help">Preset: Jakarta 4.5 · Surabaya 5.0 · Kupang 5.5</div>
+              </div>
+              <button type="button" id="btn-solar" class="btn btn-secondary btn-block"><i class="fa-solid fa-bolt"></i> Hitung Potensi Surya</button>
+              <div id="solar-result" style="display:none; margin-top:16px"></div>
+              <p class="help" style="margin-top:12px">Estimasi sederhana: <em>kWp = luas × efisiensi × 1kW/m²</em>. Bukan pengukuran fisik presisi.</p>
             </div>
-            <button type="button" id="btn-solar" class="btn btn-secondary btn-block"><i class="fa-solid fa-bolt"></i> Hitung Potensi Surya</button>
-            <div id="solar-result" style="display:none; margin-top:16px"></div>
-            <p class="help" style="margin-top:12px">Estimasi sederhana: <em>kWp = luas × efisiensi × 1kW/m²</em>. Bukan pengukuran fisik presisi.</p>
           </div>
         </div>
-      </div>
 
-      <!-- History -->
-      <div class="card" id="history" style="margin-top:16px">
-        <div class="card-pad">
-          <div class="card-header">
-            <h2 class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</h2>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="localStorage.removeItem('ecogrid_history_v1'); location.reload()">Hapus</button>
+        <!-- History -->
+        <div class="card" id="history" style="margin-top:16px">
+          <div class="card-pad">
+            <div class="card-header">
+              <h2 class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</h2>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="localStorage.removeItem('ecogrid_history_v1'); location.reload()">Hapus</button>
+            </div>
+            <div id="history-empty" class="empty" style="padding:24px 0">
+              <div class="empty-icon"><i class="fa-solid fa-inbox"></i></div>
+              <h3 style="font-size:14px">Belum ada riwayat</h3>
+              <p style="font-size:13px">Hasil perhitungan dengan <em>Simpan otomatis</em> akan muncul di sini.</p>
+            </div>
+            <div id="history-list" style="display:flex;flex-direction:column;gap:10px; max-height:260px; overflow-y:auto"></div>
           </div>
-          <div id="history-empty" class="empty" style="padding:24px 0">
-            <div class="empty-icon"><i class="fa-solid fa-inbox"></i></div>
-            <h3 style="font-size:14px">Belum ada riwayat</h3>
-            <p style="font-size:13px">Hasil perhitungan dengan <em>Simpan otomatis</em> akan muncul di sini.</p>
-          </div>
-          <div id="history-list" style="display:flex;flex-direction:column;gap:10px"></div>
         </div>
       </div>
     </section>
 
-    <!-- Results column -->
-    <section aria-labelledby="results-heading" aria-live="polite">
+    <!-- RESULTS — pindah ke bawah konfigurasi + riwayat -->
+    <section class="results-below" aria-labelledby="results-heading" aria-live="polite" style="margin-top:16px">
       <h2 id="results-heading" class="sr-only">Hasil Analitik</h2>
       <div id="results-live" class="sr-only" aria-live="polite"></div>
 
