@@ -2,8 +2,8 @@ import { api } from "./api/client.js";
 import { createDeviceRow, readDevices, reindex } from "./components/DeviceRow.js";
 import { fmtKwh, fmtRupiah, fmtCo2, escapeHtml } from "./utils/format.js";
 import { showToast } from "./utils/dom.js";
-import { getState, setState, subscribe } from "./store/appStore.js";
-import { renderContribution, renderPeriod, renderDonut } from "./charts/charts.js";
+import { getState, setState } from "./store/appStore.js";
+import { renderContribution, renderDonut, renderPeriod } from "./charts/charts.js";
 
 const deviceList = document.getElementById("device-list");
 const form = document.getElementById("energy-form");
@@ -17,7 +17,6 @@ const insightsContainer = document.getElementById("insights-container");
 const scoreVal = document.getElementById("energy-score-val");
 const scoreCat = document.getElementById("energy-score-category");
 const scoreBar = document.getElementById("score-bar-fill");
-const flowEl = document.getElementById("energy-flow");
 const detailedTableBody = document.getElementById("detailed-tbody");
 const whatifWrap = document.getElementById("whatif-wrap");
 const whatifSlider = document.getElementById("whatif-slider");

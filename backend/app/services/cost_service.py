@@ -11,7 +11,9 @@ class CostService:
         return round(kwh * tariff, 2)
 
     @staticmethod
-    def calculate_all(daily_kwh: float, monthly_kwh: float, yearly_kwh: float, tariff_per_kwh: float = None) -> dict:
+    def calculate_all(
+        daily_kwh: float, monthly_kwh: float, yearly_kwh: float, tariff_per_kwh: float = None
+    ) -> dict:
         """
         Menghitung perkiraan biaya listrik untuk periode harian, bulanan, dan tahunan sekaligus.
         """
@@ -20,5 +22,5 @@ class CostService:
             "daily_cost": CostService.calculate(daily_kwh, tariff),
             "monthly_cost": CostService.calculate(monthly_kwh, tariff),
             "yearly_cost": CostService.calculate(yearly_kwh, tariff),
-            "tariff_per_kwh": float(tariff)
+            "tariff_per_kwh": float(tariff),
         }

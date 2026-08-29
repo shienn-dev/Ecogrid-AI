@@ -1,8 +1,19 @@
 import json
+
 from app.database import db
 from app.models.simulation import Simulation
 
-def save_simulation(total_daily_kwh, total_monthly_kwh, total_yearly_kwh, monthly_cost, monthly_carbon, energy_score, category, devices):
+
+def save_simulation(
+    total_daily_kwh,
+    total_monthly_kwh,
+    total_yearly_kwh,
+    monthly_cost,
+    monthly_carbon,
+    energy_score,
+    category,
+    devices,
+):
     try:
         sim = Simulation(
             total_daily_kwh=float(total_daily_kwh),
@@ -26,12 +37,15 @@ def save_simulation(total_daily_kwh, total_monthly_kwh, total_yearly_kwh, monthl
         print(f"save_simulation failed: {e}")
         return None
 
+
 def list_simulations(limit=20, offset=0):
     q = Simulation.query.order_by(Simulation.created_at.desc()).limit(limit).offset(offset).all()
     return q
 
+
 def get_simulation(sid):
     return db.session.get(Simulation, sid)
+
 
 def delete_simulation(sid):
     sim = db.session.get(Simulation, sid)

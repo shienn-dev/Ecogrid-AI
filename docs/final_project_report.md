@@ -132,10 +132,10 @@ Docs: `docs/Design.md` full spec.
 
 ## Testing
 
-- **Backend**: `pytest` + `pytest-cov` (70% gate, actual 77.95%). 19 tests in `backend/test_api.py:12-280`:
+- **Backend**: `pytest` + `pytest-cov` (70% gate, actual 75.66%). 19 tests in `backend/test_api.py:12-280`:
   - Home, single/multi energy, invalid watt/hours, cost multi, carbon multi, insight rules, score variations, XSS, device limit 51, unified cost/carbon, yearly 365/30, solar success/validation, history CRUD (save/list/get/delete), advisor analyze/tips, security headers.
-  - Run: `pytest backend/test_api.py -v --cov=backend/app`
-  - CI: `.github/workflows/ci.yml` matrix 3.11/3.12/3.14 → ruff + black + pytest + curl health.
+  - Run: `pytest backend/test_api.py -v --cov=backend/app` → 19 passed, `ruff check` All checks passed, `black --check` All done
+  - CI: `.github/workflows/ci.yml` matrix 3.11/3.12/3.14 → `ruff check` strict (no `|| true`), `black --check` strict, `pytest --cov-fail-under=70` strict, health `curl /api/health`
 - **Manual QA**: empty → sample → single 100W5h → multi AC+Kulkas → invalid (0W, 24.1h) → max 50 → charts render → ranking order → what-if slider → solar 40→8kWp → history save → advisor AC 10h → mobile 375px → keyboard tab → reduced-motion → XSS payload `<script>` → 413 payload >16KB.
 
 ---
@@ -207,10 +207,10 @@ Frontend → POST /api/advisor/analyze → AdvisorService.analyze
 ## Deployment
 
 - **Env**: copy `.env.example` to `.env`, set `DATABASE_URL`, `SECRET_KEY`, `CORS_ORIGINS`.
-- **Local**: `python -m venv venv && pip install -r backend/requirements.txt && python backend/app.py` → `http://127.0.0.1:5000`, frontend via `python -m http.server --directory frontend 5500` (set `window.__ECG_API_BASE="http://127.0.0.1:5000"` if needed).
-- **Docker**: `docker build -t ecogrid . && docker run -p 5000:5000 --env-file .env ecogrid` (gunicorn 2 workers, 2 threads). Compose optional.
-- **Prod**: gunicorn `gunicorn.conf.py` bind `HOST:PORT`, `pip install gunicorn`, `Flask-Migrate flask db upgrade` for Postgres, Nginx serves `frontend/` static.
-- **CI**: GitHub Actions runs test matrix + health curl.
+- **Local**: `python -m venv venv && pip install -r backend/requirements.txt && python backend/app.py` → `http://127.0.0.1:5000/` serves frontend + API same-origin (no CORS), or `python -m http.server --directory frontend 8000` with `window.__ECG_API_BASE="http://127.0.0.1:5000"`.
+- **Docker**: `docker build -t ecogrid . && docker run -p 5000:5000 --env-file .env ecogrid` (gunicorn 2 workers, 2 threads, `gunicorn.conf.py` bind `HOST:PORT`, `WORKDIR /app`, `COPY gunicorn.conf.py`) — **DOCKER RUNTIME NOT AVAILABLE** in audit env (`docker: command not found`), static inspection PASS.
+- **Prod**: gunicorn `gunicorn.conf.py` bind `HOST:PORT`, `Flask-Migrate flask db upgrade` for Postgres, Nginx serves `frontend/` static.
+- **CI**: GitHub Actions strict — ruff/black must pass, coverage 70, health `curl -f /api/health`.
 
 ---
 
@@ -266,7 +266,7 @@ ecogrid-ai/
 - [x] UX (KPI first, 5 questions <5s, empty/loading/error, what-if, collapsible table)
 - [x] Design (light enterprise, no glassmorphism, tokens, Design.md)
 - [x] A11y + Responsive (labels, aria-live, focus, 1→2→4 cols, charts 2→1)
-- [x] Tests pass (19/19, 77.95% cov), CI green, no P1/P2 defects
+- [x] Tests pass (19/19, 75.66% cov), ruff/black pass, CI strict green, no P1/P2 defects
 - [x] Docs (README reflects reality, Design, system_architecture, final report)
 
 **Honesty**: No false AI claims. Project is rule-based + deterministic simulation — portable, testable, honest.

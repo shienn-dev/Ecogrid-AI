@@ -1,9 +1,9 @@
-from flask import Blueprint, request, jsonify
-from app.database import db
-from app.models.simulation import Simulation
-from app.repositories.simulation_repo import list_simulations, get_simulation, delete_simulation
+from flask import Blueprint, jsonify, request
+
+from app.repositories.simulation_repo import delete_simulation, get_simulation, list_simulations
 
 history_bp = Blueprint("history", __name__)
+
 
 @history_bp.route("", methods=["GET"])
 @history_bp.route("/", methods=["GET"])
@@ -22,6 +22,7 @@ def list_history():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
 @history_bp.route("/<int:sid>", methods=["GET"])
 def get_one(sid):
     try:
@@ -31,6 +32,7 @@ def get_one(sid):
         return jsonify({"status": "success", "data": sim.to_dict()})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @history_bp.route("/<int:sid>", methods=["DELETE"])
 def delete_one(sid):
@@ -42,17 +44,28 @@ def delete_one(sid):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
 # Alternative POST to create manually (optional)
 @history_bp.route("", methods=["POST"])
 @history_bp.route("/", methods=["POST"])
 def create_history():
     data = request.get_json() or {}
     # Expect same as simulation
-    required = ["total_daily_kwh", "total_monthly_kwh", "total_yearly_kwh", "monthly_cost", "monthly_carbon", "energy_score", "category", "devices"]
+    required = [
+        "total_daily_kwh",
+        "total_monthly_kwh",
+        "total_yearly_kwh",
+        "monthly_cost",
+        "monthly_carbon",
+        "energy_score",
+        "category",
+        "devices",
+    ]
     for f in required:
         if f not in data:
             return jsonify({"status": "error", "message": f"Field {f} wajib"}), 400
     from app.repositories.simulation_repo import save_simulation
+
     sim = save_simulation(
         total_daily_kwh=data["total_daily_kwh"],
         total_monthly_kwh=data["total_monthly_kwh"],

@@ -1,9 +1,11 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request
+
+from app.config import Config
 from app.services.solar_service import SolarService
 from app.utils.validator import validate_numeric
-from app.config import Config
 
 solar_bp = Blueprint("solar", __name__)
+
 
 @solar_bp.route("/simulate", methods=["POST"])
 def simulate_solar():
@@ -11,7 +13,9 @@ def simulate_solar():
     roof_area = data.get("roof_area")
     efficiency = data.get("efficiency", 0.20)
     sun_hours = data.get("sun_hours", 4.5)
-    tariff = data.get("tariff_per_kwh", Config.DEFAULT_TARIFF if hasattr(Config, "DEFAULT_TARIFF") else 1444.70)
+    tariff = data.get(
+        "tariff_per_kwh", Config.DEFAULT_TARIFF if hasattr(Config, "DEFAULT_TARIFF") else 1444.70
+    )
     emission_factor = data.get("emission_factor", 0.87)
 
     # Validate roof_area 1-1000

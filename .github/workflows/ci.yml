@@ -24,13 +24,12 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov ruff black
       - name: Lint with ruff
-        run: ruff check backend/app backend/test_api.py || true
+        run: ruff check backend/app backend/test_api.py
       - name: Check formatting with black
-        run: black --check backend/app backend/test_api.py || true
+        run: black --check backend/app backend/test_api.py
       - name: Run tests with coverage
         run: |
-          pytest backend/test_api.py --cov=backend/app --cov-report=term-missing --cov-fail-under=50 -v
-        working-directory: .
+          pytest backend/test_api.py --cov=backend/app --cov-report=term-missing --cov-fail-under=70 -v
       - name: Health check Flask
         run: |
           python backend/app.py &

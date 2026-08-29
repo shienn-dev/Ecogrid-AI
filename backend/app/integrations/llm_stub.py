@@ -3,6 +3,7 @@ LLM Stub — future AI boundary.
 Honest: no LLM installed. This stub shows where LLM would be called.
 """
 
+
 class LLMStub:
     @staticmethod
     def generate(prompt: str) -> str:

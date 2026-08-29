@@ -12,7 +12,13 @@ class SolarService:
     """
 
     @staticmethod
-    def calculate(roof_area: float, efficiency: float = 0.20, sun_hours: float = 4.5, tariff_per_kwh: float = 1444.70, emission_factor: float = 0.87) -> dict:
+    def calculate(
+        roof_area: float,
+        efficiency: float = 0.20,
+        sun_hours: float = 4.5,
+        tariff_per_kwh: float = 1444.70,
+        emission_factor: float = 0.87,
+    ) -> dict:
         system_kwp = roof_area * efficiency * 1.0
         daily_generation = system_kwp * sun_hours
         monthly_generation = daily_generation * 30.0

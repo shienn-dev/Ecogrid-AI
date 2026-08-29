@@ -1,13 +1,18 @@
 import os
 
+
 class Config:
     DEBUG = os.getenv("FLASK_DEBUG", "false").lower() in ("true", "1", "yes")
     TESTING = False
     # CORS: comma-separated origins, default allow localhost Vite/Flask
-    CORS_ORIGINS = [o.strip() for o in os.getenv(
-        "CORS_ORIGINS",
-        "http://127.0.0.1:5000,http://localhost:5000,http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:8000,http://localhost:8000,http://127.0.0.1:3000,http://localhost:3000"
-    ).split(",") if o.strip()]
+    CORS_ORIGINS = [
+        o.strip()
+        for o in os.getenv(
+            "CORS_ORIGINS",
+            "http://127.0.0.1:5000,http://localhost:5000,http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:8000,http://localhost:8000,http://127.0.0.1:3000,http://localhost:3000",
+        ).split(",")
+        if o.strip()
+    ]
     # Support wildcard via env "CORS_ALLOW_ALL=true" for dev
     CORS_ALLOW_ALL = os.getenv("CORS_ALLOW_ALL", "false").lower() in ("true", "1")
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(16 * 1024)))  # 16KB

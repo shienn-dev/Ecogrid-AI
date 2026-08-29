@@ -1,7 +1,9 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request
+
 from app.services.advisor_service import AdvisorService
 
 advisor_bp = Blueprint("advisor", __name__)
+
 
 @advisor_bp.route("/analyze", methods=["POST"])
 def analyze():
@@ -34,8 +36,11 @@ def analyze():
         except Exception:
             return jsonify({"status": "error", "message": "monthly_kwh harus angka >=0"}), 400
 
-    result = AdvisorService.analyze(devices, total_daily_kwh=total_daily, total_monthly_kwh=total_monthly)
+    result = AdvisorService.analyze(
+        devices, total_daily_kwh=total_daily, total_monthly_kwh=total_monthly
+    )
     return jsonify({"status": "success", "data": result})
+
 
 @advisor_bp.route("/tips", methods=["GET"])
 def tips():

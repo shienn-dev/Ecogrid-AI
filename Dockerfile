@@ -9,10 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install gunicorn
 
 COPY backend ./backend
 COPY frontend ./frontend
+COPY gunicorn.conf.py ./gunicorn.conf.py
 COPY .env.example ./.env.example
 
 ENV PYTHONUNBUFFERED=1 \

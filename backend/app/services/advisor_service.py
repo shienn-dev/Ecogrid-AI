@@ -1,7 +1,8 @@
 import json
 import os
-import html
+
 from app.services.insight_service import InsightService
+
 
 class AdvisorService:
     _tips_cache = None
@@ -21,7 +22,7 @@ class AdvisorService:
             try:
                 ap = os.path.abspath(p)
                 if os.path.exists(ap):
-                    with open(ap, "r", encoding="utf-8") as f:
+                    with open(ap, encoding="utf-8") as f:
                         cls._tips_cache = json.load(f)
                         return cls._tips_cache
             except Exception:
@@ -38,20 +39,28 @@ class AdvisorService:
             watt = d.get("watt", 0)
             hours = d.get("hours_per_day", d.get("hours", 0))
             try:
-                monthly_kwh = float(watt) * float(hours) / 1000 * 30 if watt and hours else float(d.get("monthly_kwh", 0) or 0)
+                monthly_kwh = (
+                    float(watt) * float(hours) / 1000 * 30
+                    if watt and hours
+                    else float(d.get("monthly_kwh", 0) or 0)
+                )
             except Exception:
                 monthly_kwh = 0
-            norm.append({
-                "device_name": str(name),
-                "watt": float(watt or 0),
-                "hours_per_day": float(hours or 0),
-                "monthly_kwh": monthly_kwh,
-                "contribution_percentage": 0,  # will compute if needed
-            })
+            norm.append(
+                {
+                    "device_name": str(name),
+                    "watt": float(watt or 0),
+                    "hours_per_day": float(hours or 0),
+                    "monthly_kwh": monthly_kwh,
+                    "contribution_percentage": 0,  # will compute if needed
+                }
+            )
         # Compute contributions if totals given
         if total_monthly_kwh and total_monthly_kwh > 0:
             for n in norm:
-                n["contribution_percentage"] = round((n["monthly_kwh"] / total_monthly_kwh) * 100, 2)
+                n["contribution_percentage"] = round(
+                    (n["monthly_kwh"] / total_monthly_kwh) * 100, 2
+                )
         elif norm:
             tot = sum(n["monthly_kwh"] for n in norm)
             if tot > 0:

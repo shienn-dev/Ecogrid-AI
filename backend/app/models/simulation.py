@@ -1,12 +1,14 @@
-from datetime import datetime, timezone
-from app.database import db
 import json
+from datetime import UTC, datetime
+
+from app.database import db
+
 
 class Simulation(db.Model):
     __tablename__ = "simulations"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(UTC))
     total_daily_kwh = db.Column(db.Float, nullable=False)
     total_monthly_kwh = db.Column(db.Float, nullable=False)
     total_yearly_kwh = db.Column(db.Float, nullable=False)
