@@ -57,7 +57,8 @@ def create_app(config_class=Config):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net "
+            "https://cdnjs.cloudflare.com; "
             "style-src 'self' https://fonts.googleapis.com "
             "https://cdnjs.cloudflare.com 'unsafe-inline'; "
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "

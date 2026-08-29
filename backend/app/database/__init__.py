@@ -5,27 +5,27 @@ db = SQLAlchemy()
 
 def init_db(app):
     # Config
-    db_url = app.config.get("DATABASE_URL") or "sqlite:///database/energy.db"
-    # Flask-SQLAlchemy expects SQLALCHEMY_DATABASE_URI
-    app.config.setdefault("SQLALCHEMY_DATABASE_URI", db_url)
-    app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
-    # Ensure path exists for sqlite
-    if db_url.startswith("sqlite") and "///" in db_url:
-        import os
+    import os
 
-        # extract file path
+    db_url = app.config.get("DATABASE_URL") or "sqlite:///database/energy.db"
+    # Convert relative sqlite path to absolute to avoid instance folder confusion
+    if db_url.startswith("sqlite") and "///" in db_url and ":memory:" not in db_url:
         try:
+            # Extract path part after ///
             path = db_url.split("///")[-1].split("?")[0]
-            # relative to backend/ root? Flask-SQLAlchemy resolves relative to instance
-            # ensure directory exists: backend/database/
-            if path and not path.startswith(":memory:"):
-                # path is like database/energy.db (relative to backend)
-                # app.root_path is backend/app, so dirname is backend
+            if path and not os.path.isabs(path):
                 backend_dir = os.path.abspath(os.path.join(app.root_path, os.pardir))
-                full = os.path.join(backend_dir, path) if not os.path.isabs(path) else path
+                full = os.path.join(backend_dir, path)
                 os.makedirs(os.path.dirname(full), exist_ok=True)
+                # Use absolute URI (forward slashes for Windows)
+                full_forward = full.replace("\\", "/")
+                # Ensure 3 slashes for absolute: sqlite:///D:/...
+                db_url = f"sqlite:///{full_forward}"
         except Exception:
             pass
+    # Flask-SQLAlchemy expects SQLALCHEMY_DATABASE_URI
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
     db.init_app(app)
     # Create tables
     with app.app_context():
