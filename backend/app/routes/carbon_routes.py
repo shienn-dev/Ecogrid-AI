@@ -8,8 +8,9 @@ carbon_bp = Blueprint('carbon', __name__)
 def calculate_carbon():
     data = request.get_json() or {}
     
-    # Jika request mengirimkan format multi-periode (daily, monthly, yearly)
-    if "daily_kwh" in data or "monthly_kwh" in data or "yearly_kwh" in data:
+    # Jika request mengirimkan format multi-periode (minimal 2 periode)
+    _keys = [k for k in ("daily_kwh", "monthly_kwh", "yearly_kwh") if k in data]
+    if len(_keys) >= 2:
         daily_kwh = data.get('daily_kwh', 0.0)
         monthly_kwh = data.get('monthly_kwh', 0.0)
         yearly_kwh = data.get('yearly_kwh', 0.0)
@@ -68,7 +69,7 @@ def calculate_carbon():
         "data": {
             "daily_carbon_kg": round(carbon_val / 30.0, 4),
             "monthly_carbon_kg": carbon_val,
-            "yearly_carbon_kg": round(carbon_val * 12.0, 4),
+            "yearly_carbon_kg": round(carbon_val / 30.0 * 365.0, 4),
             "emission_factor": float(factor)
         }
     })

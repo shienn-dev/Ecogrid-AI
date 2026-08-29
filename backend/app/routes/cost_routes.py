@@ -8,8 +8,9 @@ cost_bp = Blueprint('cost', __name__)
 def calculate_cost():
     data = request.get_json() or {}
     
-    # Jika request mengirimkan format multi-periode (daily, monthly, yearly)
-    if "daily_kwh" in data or "monthly_kwh" in data or "yearly_kwh" in data:
+    # Jika request mengirimkan format multi-periode (daily+monthly+yearly atau minimal 2 periode)
+    _keys = [k for k in ("daily_kwh", "monthly_kwh", "yearly_kwh") if k in data]
+    if len(_keys) >= 2:
         daily_kwh = data.get('daily_kwh', 0.0)
         monthly_kwh = data.get('monthly_kwh', 0.0)
         yearly_kwh = data.get('yearly_kwh', 0.0)
@@ -68,7 +69,7 @@ def calculate_cost():
         "data": {
             "daily_cost": round(cost_val / 30.0, 2),
             "monthly_cost": cost_val,
-            "yearly_cost": round(cost_val * 12.0, 2),
+            "yearly_cost": round(cost_val / 30.0 * 365.0, 2),
             "tariff_per_kwh": float(tariff)
         }
     })

@@ -7,13 +7,21 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from app import create_app
+from app.config import TestingConfig
 from app.services.insight_service import InsightService
 
 class EcoGridTestCase(unittest.TestCase):
     def setUp(self):
-        self.app = create_app()
+        self.app = create_app(TestingConfig)
         self.app.config['TESTING'] = True
         self.client = self.app.test_client()
+        # Ensure DB tables exist for history tests
+        with self.app.app_context():
+            try:
+                from app.database import db
+                db.create_all()
+            except Exception:
+                pass
 
     def test_home_status(self):
         """Memverifikasi endpoint root '/' merespon dengan benar"""
@@ -38,7 +46,7 @@ class EcoGridTestCase(unittest.TestCase):
         self.assertEqual(data['status'], 'success')
         self.assertEqual(data['data']['total_daily_kwh'], 1.2)
         self.assertEqual(data['data']['total_monthly_kwh'], 36.0)
-        self.assertEqual(data['data']['total_yearly_kwh'], 43.8) # 1.2 * 365 / 10 = 43.8
+        self.assertEqual(data['data']['total_yearly_kwh'], 438.0) # 1.2 * 365
         self.assertEqual(len(data['data']['devices']), 1)
         self.assertEqual(data['data']['devices'][0]['device_name'], 'AC')
         self.assertIn('energy_score', data['data'])
@@ -189,6 +197,95 @@ class EcoGridTestCase(unittest.TestCase):
         res_dirty = InsightService.generate_insights(devices_dirty, 21.9, 657.0)
         self.assertEqual(res_dirty["category"], "Needs Improvement")
         self.assertLess(res_dirty["energy_score"], 50)
+
+    def test_xss_escaping(self):
+        """Device name dengan HTML harus di-escape"""
+        payload = {"devices": [{"device_name": "<script>alert(1)</script>", "watt": 100, "hours_per_day": 5}]}
+        response = self.client.post('/api/energy/calculate', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertNotIn("<script>", data['data']['devices'][0]['device_name'])
+        self.assertIn("&lt;script&gt;", data['data']['devices'][0]['device_name'])
+
+    def test_device_limit(self):
+        """Melebihi 50 perangkat harus ditolak"""
+        payload = {"devices": [{"device_name": f"d{i}", "watt": 10, "hours_per_day": 1} for i in range(51)]}
+        response = self.client.post('/api/energy/calculate', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("melebihi batas", json.loads(response.data)['message'])
+
+    def test_unified_cost_carbon(self):
+        """Energy calculate harus mengembalikan cost & carbon inline"""
+        payload = {"devices": [{"device_name": "AC", "watt": 800, "hours_per_day": 6}]}
+        response = self.client.post('/api/energy/calculate', data=json.dumps(payload), content_type='application/json')
+        data = json.loads(response.data)['data']
+        self.assertIn('cost', data)
+        self.assertIn('carbon', data)
+        self.assertAlmostEqual(data['cost']['monthly_cost'], data['total_monthly_kwh'] * 1444.70, places=1)
+        self.assertAlmostEqual(data['carbon']['monthly_carbon_kg'], data['total_monthly_kwh'] * 0.87, places=2)
+
+    def test_cost_yearly_consistency(self):
+        """Fallback yearly harus 365/30 bukan 12"""
+        payload = {"monthly_kwh": 100}
+        res = self.client.post('/api/cost/calculate', data=json.dumps(payload), content_type='application/json')
+        data = json.loads(res.data)['data']
+        # yearly = monthly/30*365 * tariff
+        expected = round(100 / 30 * 365 * 1444.70, 2)
+        self.assertAlmostEqual(data['yearly_cost'], expected, places=1)
+
+    def test_solar_simulate_success(self):
+        """Solar simulate menghasilkan kWp dan saving"""
+        payload = {"roof_area": 40, "efficiency": 0.20, "sun_hours": 4.5}
+        res = self.client.post('/api/solar/simulate', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)['data']
+        self.assertEqual(data['system_kwp'], 8.0)
+        self.assertEqual(data['daily_generation'], 36.0)
+        self.assertEqual(data['monthly_generation'], 1080.0)
+        self.assertGreater(data['estimated_saving'], 0)
+
+    def test_solar_validation(self):
+        payload = {"roof_area": 0, "efficiency": 0.20, "sun_hours": 4.5}
+        res = self.client.post('/api/solar/simulate', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+
+    def test_history_crud(self):
+        """Simpan dan list history"""
+        # save via ?save=true
+        payload = {"devices": [{"device_name": "Kulkas", "watt": 120, "hours_per_day": 24}]}
+        res = self.client.post('/api/energy/calculate?save=true', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        hid = json.loads(res.data)['data'].get('history_id')
+        self.assertIsNotNone(hid)
+        # list
+        res = self.client.get('/api/history?limit=5')
+        self.assertEqual(res.status_code, 200)
+        self.assertGreaterEqual(len(json.loads(res.data)['data']), 1)
+        # get one
+        res = self.client.get(f'/api/history/{hid}')
+        self.assertEqual(res.status_code, 200)
+        # delete
+        res = self.client.delete(f'/api/history/{hid}')
+        self.assertEqual(res.status_code, 200)
+
+    def test_advisor_analyze(self):
+        payload = {"devices": [{"device_name": "AC", "watt": 800, "hours_per_day": 10}]}
+        res = self.client.post('/api/advisor/analyze', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)['data']
+        self.assertIn('recommendations', data)
+        self.assertTrue(any('AC' in r['title'] or 'AC' in r['description'] for r in data['recommendations']))
+
+    def test_advisor_tips(self):
+        res = self.client.get('/api/advisor/tips?device=ac')
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)['data']
+        self.assertTrue(len(data) > 0)
+
+    def test_security_headers(self):
+        res = self.client.get('/')
+        self.assertEqual(res.headers.get('X-Content-Type-Options'), 'nosniff')
+        self.assertEqual(res.headers.get('X-Frame-Options'), 'DENY')
 
 if __name__ == '__main__':
     unittest.main()

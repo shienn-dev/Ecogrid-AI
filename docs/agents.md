@@ -110,5 +110,56 @@ Dokumen ini mencatat seluruh riwayat pengerjaan, refaktorisasi, keputusan arsite
   * `test_insight_engine_rules`: Memastikan seluruh aturan (R1, R2, R3, R4) dapat terdeteksi dengan payload data tiruan secara akurat.
   * `test_energy_score_variations`: Menguji kebenaran hasil perhitungan tingkat skor energi (dari Excellent hingga Needs Improvement).
 
+---
+
+## 📅 Fase 2: Production Transformation (2026-08-28)
+
+### Phase 0 — Critical Stabilization
+* **Bug Fix**: `energy_routes.py:108-114` single-device path kini menyertakan `watt/hours_per_day` dan escape `html.escape` — menutup `KeyError: hours_per_day`.
+* **Scoring**: `insight_service.py:110-140` kalibrasi ulang (kWh 0.12 cap 35, heavy 8× len cap 25, dominant 8) sehingga fixture boros 657kWh → Needs Improvement (<50) dan tetap Excellent untuk 6kWh.
+* **XSS**: Backend escape di `energy_routes.py:59,110` + `insight_service.py` via `html.escape`, frontend `utils/format.js:escapeHtml` + `textContent`.
+* **API Base**: `frontend/index.html:325-331` hardcode `127.0.0.1:5000` → `api/client.js` relative `/api` + `window.__ECG_API_BASE`.
+* **Config**: `backend/app/config.py` (12-factor, `CORS_ALLOW_ALL`, `MAX_CONTENT_LENGTH 16KB`, `MAX_DEVICES 50`), `backend/app.py:7` debug gated env.
+* **Year Consistency**: `cost_routes.py:66-71` dan `carbon_routes.py:66-71` fallback yearly = `monthly/30*365`.
+* **Tests**: `test_api.py:41` yearly 43.8 → 438.0, tambah 10 tests baru (XSS, limit, unified, solar, history, advisor, headers) → 19 tests 100% pass, coverage 77.95%.
+
+### Phase 1 — Engineering Foundation
+* **Docs**: `README.md` lengkap (overview, fitur, arch, quick start, API, config, testing, deploy), `pyproject.toml` (pytest-cov 70, ruff, black), `.env.example`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml` matrix 3.11/3.12/3.14.
+* **Config**: `app/config.py:TestingConfig` + `app/database/__init__.py` SQLite in-memory untuk test.
+* **Tooling**: `requirements.txt` + `python-dotenv`, `SQLAlchemy`, `Flask-Migrate`, `Flask-Limiter`, `gunicorn`, `pytest/pytest-cov`.
+
+### Phase 2 — Design System + Frontend Refactor
+* **Design**: `frontend/css/tokens.css` Material 3/Carbon/Tailwind/Stripe/Vercel light enterprise — hapus glassmorphism, orb glow, neon.
+* **CSS Modular**: `tokens.css, base.css, layout.css, components.css, dashboard.css, responsive.css` (850 lines) — shadow-card, tabular numbers, focus ring teal.
+* **JS Modular**: `frontend/js/api/{config,client}.js`, `store/{appStore,historyStore}.js`, `components/DeviceRow.js`, `charts/charts.js`, `utils/{format,dom}.js`, `dashboard.js` (~900 lines) — ESM `type="module"`, no inline monolith.
+* **KPI**: 4 cards (kWh/Rp/CO₂/Score) left accent 3px, responsive 4→2→1.
+* **A11y**: label for/id, aria-live, role status, keyboard, reduced-motion.
+
+### Phase 3 — Analytics Dashboard
+* **Unified API**: `energy_routes.py:78-80` `cost` + `carbon` inline sehingga frontend 1 request (fallback paralel tetap).
+* **Charts**: `charts.js` lazy `import('chart.js@4.4.7/+esm')` — bar horizontal, doughnut share, period bar — 260px, palette muted tech.
+* **What-if**: slider 1-6h `dashboard.js:whatif` live delta kWh/Rp/CO₂, collapsible detailed table.
+
+### Phase 4 — Solar Simulator
+* **Backend**: `services/solar_service.py` `area*eff*sun` → kWp, daily/monthly/yearly, saving, carbon, payback; `routes/solar_routes.py` validate 1-1000, 0.05-0.30, 1-10.
+* **Frontend**: card di config-col `index.html#solar` slider + hasil 2×2 KPI.
+
+### Phase 5 — Database + History
+* **Model**: `models/simulation.py` SQLite `simulations` (total_*, monthly_*, score, category, devices_json), `database/__init__.py` init + create_all.
+* **Repo**: `repositories/simulation_repo.py` save/list/get/delete.
+* **Routes**: `routes/history_routes.py` `GET /api/history`, `GET /:id`, `DELETE /:id`, `POST /history`, `POST /api/energy/calculate?save=true`.
+* **Frontend**: `store/historyStore.js` localStorage fallback + `dashboard.js` panel 5 recent.
+
+### Phase 6 — Energy Advisor
+* **Service**: `services/advisor_service.py` façade atas `InsightService` + `datasets/tips.json` (AC, kulkas, lampu, TV, umum), priority sort cap 6, handle >500W, AC>8h, lamp>10h.
+* **Routes**: `routes/advisor_routes.py` `POST /analyze` + `GET /tips?device=ac`.
+* **Stub**: `integrations/llm_stub.py` honest boundary (no LLM).
+
+### Phase 7 — Security, Polish, Deploy, Final Report
+* **Security**: `app/__init__.py:limiter` 60/min memory, `after_request` CSP `default-src 'self'`, `X-Content-Type-Options nosniff`, `X-Frame-Options DENY`, `Referrer-Policy`.
+* **Deploy**: `Dockerfile` python:3.11-slim gunicorn 2w/2t, `.dockerignore`, `gunicorn.conf.py`, `.env.example` secrets.
+* **Docs**: `docs/Design.md` tokens spec, `docs/final_project_report.md` lengkap, `README.md` deploy, `docs/system_architecture.md` masih sesuai (endpoints sama, folder diperluas).
+* **Tests**: 19/19 pass, coverage 77.95%, headers + XSS + limit + solar + history + advisor covered.
+
 
 

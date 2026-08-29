@@ -5,9 +5,12 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from app import create_app
+from app.config import Config
 
-app = create_app()
+app = create_app(Config)
 
 if __name__ == "__main__":
-    # Menjalankan Flask di port 5000 dengan mode debug aktif
-    app.run(debug=True, host="127.0.0.1", port=5000)
+    debug = os.getenv("FLASK_DEBUG", "false").lower() in ("true", "1", "yes") or Config.DEBUG
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", "5000"))
+    app.run(debug=debug, host=host, port=port)

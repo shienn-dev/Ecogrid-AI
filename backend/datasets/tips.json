@@ -1,0 +1,53 @@
+[
+  {
+    "device": "ac",
+    "keywords": ["ac", "pendingin", "air conditioner"],
+    "tips": [
+      "Atur suhu 24–25°C — tiap 1°C lebih tinggi hemat ~6%.",
+      "Bersihkan filter tiap 2 minggu, tutup rapat ruangan.",
+      "Gunakan timer atau mode eco saat tidur."
+    ]
+  },
+  {
+    "device": "kulkas",
+    "keywords": ["kulkas", "lemari es", "refrigerator"],
+    "tips": [
+      "Jangan masukkan makanan panas, atur suhu 3–4°C (kulkas) dan -18°C (freezer).",
+      "Pastikan pintu rapat, bersihkan kondensor belakang.",
+      "Isi 70–80% kapasitas untuk sirkulasi optimal."
+    ]
+  },
+  {
+    "device": "lampu",
+    "keywords": ["lampu", "lamp", "light"],
+    "tips": [
+      "Ganti ke LED 80–90% lebih hemat, matikan saat tidak perlu.",
+      "Manfaatkan cahaya alami dan sensor gerak."
+    ]
+  },
+  {
+    "device": "tv",
+    "keywords": ["tv", "televisi", "television"],
+    "tips": [
+      "Cabut daya saat standby untuk hindari vampire power.",
+      "Kurangi brightness dan matikan saat tidak ditonton."
+    ]
+  },
+  {
+    "device": "mesin cuci",
+    "keywords": ["mesin cuci", "washing"],
+    "tips": [
+      "Cuci dengan kapasitas penuh, gunakan mode eco.",
+      "Jemur manual daripada pengering listrik."
+    ]
+  },
+  {
+    "device": "umum",
+    "keywords": [],
+    "tips": [
+      "Matikan perangkat saat tidak digunakan.",
+      "Gunakan stopkontak dengan saklar.",
+      "Audit perangkat dengan watt >500W dan jam tinggi."
+    ]
+  }
+]

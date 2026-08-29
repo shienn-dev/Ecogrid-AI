@@ -1,0 +1,22 @@
+/* Responsive tweaks */
+@media (max-width: 1023px) {
+  .topbar-inner { padding: 0 16px; }
+  .nav { display: none; } /* hide nav on mobile, can be burger later */
+  .container { padding: 16px; }
+  .page-head { padding: 0 16px; }
+}
+
+@media (max-width: 640px) {
+  .card-pad { padding: 16px; }
+  .kpi-value { font-size: 1.4rem; }
+  .score-value { font-size: 2.4rem; }
+  .flow { flex-direction: column; }
+  .flow-arrow { transform: rotate(90deg); }
+  .table { font-size: 13px; }
+  .table th, .table td { padding: 8px 10px; }
+}
+
+@media (max-width: 380px) {
+  .kpi-grid { gap: 12px; }
+  .kpi { padding: 14px; }
+}
