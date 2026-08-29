@@ -318,36 +318,56 @@
   <!-- Toast stack moved to body via JS -->
   <script type="module" src="js/dashboard.js"></script>
   <script type="module">
-    // Solar wiring (keeps dashboard.js focused on energy)
+    // Solar wiring — robust, works even if dashboard.js has error, with DOMContentLoaded
     import { api } from "./js/api/client.js";
     import { fmtRupiah, fmtKwh } from "./js/utils/format.js";
     import { showToast } from "./js/utils/dom.js";
-    const btn = document.getElementById("btn-solar");
-    const res = document.getElementById("solar-result");
-    btn?.addEventListener("click", async () => {
-      const roof = parseFloat(document.getElementById("solar-roof").value);
-      const eff = parseFloat(document.getElementById("solar-eff").value);
-      const sun = parseFloat(document.getElementById("solar-sun").value);
-      if (!roof || roof <=0 || roof>1000) return showToast("Luas atap 1–1000 m²", "error");
-      if (!eff || eff<0.05 || eff>0.30) return showToast("Efisiensi 0.05–0.30", "error");
-      if (!sun || sun<1 || sun>10) return showToast("Sun hours 1–10", "error");
-      btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghitung...';
-      try {
-        const data = await api.simulateSolar({ roof_area: roof, efficiency: eff, sun_hours: sun });
-        const d = data.data;
-        res.style.display = "block";
-        res.innerHTML = `
-          <div class="kpi-grid" style="grid-template-columns:1fr 1fr">
-            <div class="kpi" style="padding:16px"><div class="kpi-label">Kapasitas</div><div class="kpi-value" style="font-size:1.25rem">${d.system_kwp.toFixed(2)} <span style="font-size:0.6em;color:var(--text-tertiary)">kWp</span></div><div class="kpi-sub">Atap ${roof} m² × ${(eff*100).toFixed(0)}%</div></div>
-            <div class="kpi" style="padding:16px"><div class="kpi-label">Generasi</div><div class="kpi-value" style="font-size:1.25rem">${fmtKwh(d.daily_generation)} <span style="font-size:0.6em;color:var(--text-tertiary)">kWh/hari</span></div><div class="kpi-sub">${fmtKwh(d.monthly_generation)} kWh/bulan · ${fmtKwh(d.yearly_generation)} kWh/tahun</div></div>
-            <div class="kpi" style="padding:16px"><div class="kpi-label">Hemat Biaya</div><div class="kpi-value" style="font-size:1.1rem">${fmtRupiah(d.estimated_saving)} <span style="font-size:0.6em;color:var(--text-tertiary)">/bulan</span></div><div class="kpi-sub">~ ${fmtRupiah(d.estimated_saving*12)} /tahun</div></div>
-            <div class="kpi" style="padding:16px"><div class="kpi-label">Kurangi CO₂</div><div class="kpi-value" style="font-size:1.1rem">${(d.carbon_reduction_kg||0).toFixed(1)} <span style="font-size:0.6em;color:var(--text-tertiary)">kg/bulan</span></div><div class="kpi-sub">≈ ${((d.carbon_reduction_kg||0)*12).toFixed(0)} kg/tahun</div></div>
-          </div>
-          <p class="help" style="margin-top:12px">Asumsi: 1 kW/m² irradiance, tanpa shading/tilt/orientasi. Estimasi, bukan pengukuran presisi.</p>
-        `;
-      } catch(e){ showToast(e.message||"Gagal simulasi surya","error"); }
-      finally { btn.disabled=false; btn.innerHTML=old; }
-    });
+    function initSolar() {
+      const btn = document.getElementById("btn-solar");
+      const res = document.getElementById("solar-result");
+      if (!btn || !res) { console.warn("Solar elements not found", btn, res); return; }
+      console.log("Solar init OK", btn);
+      btn.addEventListener("click", async () => {
+        console.log("Solar click", {
+          roof: document.getElementById("solar-roof")?.value,
+          eff: document.getElementById("solar-eff")?.value,
+          sun: document.getElementById("solar-sun")?.value
+        });
+        const roof = parseFloat(document.getElementById("solar-roof")?.value);
+        const eff = parseFloat(document.getElementById("solar-eff")?.value);
+        const sun = parseFloat(document.getElementById("solar-sun")?.value);
+        if (!roof || roof <=0 || roof>1000) return showToast("Luas atap 1–1000 m²", "error");
+        if (!eff || eff<0.05 || eff>0.30) return showToast("Efisiensi 0.05–0.30", "error");
+        if (!sun || sun<1 || sun>10) return showToast("Sun hours 1–10", "error");
+        btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghitung...';
+        try {
+          console.log("Solar request", { roof_area: roof, efficiency: eff, sun_hours: sun });
+          const data = await api.simulateSolar({ roof_area: roof, efficiency: eff, sun_hours: sun });
+          console.log("Solar response", data);
+          const d = data.data;
+          res.style.display = "block";
+          res.innerHTML = `
+            <div class="kpi-grid" style="grid-template-columns:1fr 1fr">
+              <div class="kpi" style="padding:16px"><div class="kpi-label">Kapasitas</div><div class="kpi-value" style="font-size:1.25rem">${d.system_kwp.toFixed(2)} <span style="font-size:0.6em;color:var(--text-tertiary)">kWp</span></div><div class="kpi-sub">Atap ${roof} m² × ${(eff*100).toFixed(0)}%</div></div>
+              <div class="kpi" style="padding:16px"><div class="kpi-label">Generasi</div><div class="kpi-value" style="font-size:1.25rem">${fmtKwh(d.daily_generation)} <span style="font-size:0.6em;color:var(--text-tertiary)">kWh/hari</span></div><div class="kpi-sub">${fmtKwh(d.monthly_generation)} kWh/bulan · ${fmtKwh(d.yearly_generation)} kWh/tahun</div></div>
+              <div class="kpi" style="padding:16px"><div class="kpi-label">Hemat Biaya</div><div class="kpi-value" style="font-size:1.1rem">${fmtRupiah(d.estimated_saving)} <span style="font-size:0.6em;color:var(--text-tertiary)">/bulan</span></div><div class="kpi-sub">~ ${fmtRupiah(d.estimated_saving*12)} /tahun</div></div>
+              <div class="kpi" style="padding:16px"><div class="kpi-label">Kurangi CO₂</div><div class="kpi-value" style="font-size:1.1rem">${(d.carbon_reduction_kg||0).toFixed(1)} <span style="font-size:0.6em;color:var(--text-tertiary)">kg/bulan</span></div><div class="kpi-sub">≈ ${((d.carbon_reduction_kg||0)*12).toFixed(0)} kg/tahun</div></div>
+            </div>
+            <p class="help" style="margin-top:12px">Asumsi: 1 kW/m² irradiance, tanpa shading/tilt/orientasi. Estimasi, bukan pengukuran presisi.</p>
+          `;
+          res.scrollIntoView({behavior:'smooth', block:'nearest'});
+        } catch(e){
+          console.error("Solar error", e);
+          showToast(e.message||"Gagal simulasi surya","error");
+        }
+        finally { btn.disabled=false; btn.innerHTML=old; }
+      });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initSolar);
+    } else {
+      initSolar();
+    }
   </script>
 </body>
 </html>
