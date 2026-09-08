@@ -120,8 +120,8 @@ function renderKpis(data) {
         <div class="kpi-label">Energy Score</div>
         <div class="kpi-icon"><i class="fa-solid fa-gauge-high"></i></div>
       </div>
-      <div class="kpi-value tabular">${data.energy_score} <span style="font-size:0.55em;font-weight:600;color:var(--text-tertiary)">/100</span></div>
-      <div class="kpi-sub"><span class="score-badge ${badgeClass(data.category)}" style="padding:4px 8px;font-size:11px">${escapeHtml(data.category)}</span></div>
+      <div class="kpi-value tabular">${Number(data.energy_score) || 0} <span style="font-size:0.55em;font-weight:600;color:var(--text-tertiary)">/100</span></div>
+      <div class="kpi-sub"><span class="score-badge ${badgeClass(data.category)}" style="padding:4px 8px;font-size:11px">${sanitizeHtml(data.category || "-")}</span></div>
       <div class="kpi-foot">Semakin tinggi, semakin efisien</div>
     </div>
   `;
@@ -163,6 +163,29 @@ function renderRanking(ranked) {
   });
 }
 
+// Strip all HTML tags but keep safe allowed ones (strong, em, b, i, u, br)
+// Prevents XSS from any unescaped backend string rendered into insights
+function sanitizeHtml(html) {
+  const allowed = /<\/?(strong|em|b|i|u|br)\s*\/?>/gi;
+  // Remove all tags, then restore allowed ones
+  let text = String(html);
+  // Escape everything first
+  text = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+  // Un-escape allowed tags
+  for (const tag of ["strong", "em", "b", "i", "u", "br"]) {
+    const open = new RegExp(`&lt;${tag}&gt;`, "gi");
+    const close = new RegExp(`&lt;/${tag}&gt;`, "gi");
+    const self = new RegExp(`&lt;${tag}\\s*/&gt;`, "gi");
+    text = text.replace(open, `<${tag}>`).replace(close, `</${tag}>`).replace(self, `<${tag}/>`);
+  }
+  return text;
+}
+
 function renderInsights(insights) {
   insightsContainer.innerHTML = "";
   if (!insights || insights.length === 0) {
@@ -175,8 +198,11 @@ function renderInsights(insights) {
   for (const ins of insights) {
     const div = document.createElement("div");
     div.className = `insight ${ins.type}`;
-    // description contains <strong> from backend (escaped device names)
-    div.innerHTML = `<div class="insight-head"><i class="${escapeHtml(ins.icon)}"></i> ${escapeHtml(ins.title)}</div><div class="insight-desc">${ins.description}</div>`;
+    // Sanitize icon, title, and description from backend to prevent XSS
+    const safeIcon = String(ins.icon || "fa-solid fa-info-circle").replace(/[^a-zA-Z0-9\s\-_]/g, "");
+    const safeTitle = sanitizeHtml(ins.title || "");
+    const safeDesc = sanitizeHtml(ins.description || "");
+    div.innerHTML = `<div class="insight-head"><i class="${safeIcon}"></i> ${safeTitle}</div><div class="insight-desc">${safeDesc}</div>`;
     insightsContainer.appendChild(div);
   }
 }
@@ -226,27 +252,42 @@ function renderHistoryLocal() {
         return;
       }
       historyEmpty.style.display = "none";
-      historyList.innerHTML = items
-        .map(
-          (h) => `
-        <div class="ranking-item" style="padding:12px">
-          <div class="ranking-top">
-            <div>
-              <div class="ranking-name">${new Date(h.created_at).toLocaleString("id-ID")}</div>
-              <div class="ranking-meta">${fmtKwh(h.total_monthly_kwh)} kWh/bln · ${fmtRupiah(h.monthly_cost || 0)} · Score ${h.energy_score}</div>
-            </div>
-            <span class="badge-rank">${escapeHtml(h.category)}</span>
-          </div>
-        </div>
-      `
-        )
-        .join("");
+      // Build DOM safely (avoid innerHTML injection from history data)
+      historyList.innerHTML = "";
+      for (const h of items) {
+        const item = document.createElement("div");
+        item.className = "ranking-item";
+        item.style.padding = "12px";
+        const top = document.createElement("div");
+        top.className = "ranking-top";
+        const left = document.createElement("div");
+        const nameEl = document.createElement("div");
+        nameEl.className = "ranking-name";
+        // Safe date formatting (avoid Invalid Date crash)
+        const d = new Date(h.created_at);
+        nameEl.textContent = isNaN(d.getTime()) ? "Waktu tidak diketahui" : d.toLocaleString("id-ID");
+        const metaEl = document.createElement("div");
+        metaEl.className = "ranking-meta";
+        metaEl.textContent = `${fmtKwh(h.total_monthly_kwh || 0)} kWh/bln · ${fmtRupiah(h.monthly_cost || 0)} · Score ${h.energy_score ?? "-"}`;
+        left.appendChild(nameEl);
+        left.appendChild(metaEl);
+        const badge = document.createElement("span");
+        badge.className = "badge-rank";
+        badge.textContent = String(h.category || "-");
+        top.appendChild(left);
+        top.appendChild(badge);
+        item.appendChild(top);
+        historyList.appendChild(item);
+      }
     });
   });
 }
 
+let isSubmitting = false; // Guard against double submit race condition
+
 async function handleSubmit(e) {
   e.preventDefault();
+  if (isSubmitting) return; // Prevent double submit
   const { ok, devices } = readDevices(deviceList);
   if (!ok) {
     showToast("Periksa kembali input perangkat yang bertanda merah.", "error");
@@ -261,6 +302,7 @@ async function handleSubmit(e) {
     return;
   }
 
+  isSubmitting = true;
   setLoading(true);
   resultsEmpty.style.display = "none";
   resultsEl.style.display = "block";
@@ -315,6 +357,7 @@ async function handleSubmit(e) {
     resultsEl.style.display = "none";
     setState({ error: err.message });
   } finally {
+    isSubmitting = false;
     setLoading(false);
     resultsEl.setAttribute("aria-busy", "false");
   }
