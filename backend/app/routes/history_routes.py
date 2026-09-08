@@ -64,6 +64,35 @@ def create_history():
     for f in required:
         if f not in data:
             return jsonify({"status": "error", "message": f"Field {f} wajib"}), 400
+
+    from app.utils.validator import validate_numeric
+
+    # Validasi tipe numerik agar tidak 500 di repository
+    numeric_fields = [
+        "total_daily_kwh",
+        "total_monthly_kwh",
+        "total_yearly_kwh",
+        "monthly_cost",
+        "monthly_carbon",
+    ]
+    for f in numeric_fields:
+        is_valid, val = validate_numeric(data[f], f, min_value=0.0)
+        if not is_valid:
+            return jsonify({"status": "error", "message": val}), 400
+        data[f] = val
+
+    is_valid, val = validate_numeric(
+        data["energy_score"], "energy_score", min_value=0, max_value=100
+    )
+    if not is_valid:
+        return jsonify({"status": "error", "message": val}), 400
+    data["energy_score"] = int(val)
+
+    if not isinstance(data["category"], str) or not data["category"].strip():
+        return jsonify({"status": "error", "message": "category harus teks"}), 400
+    if not isinstance(data["devices"], list):
+        return jsonify({"status": "error", "message": "devices harus list"}), 400
+
     from app.repositories.simulation_repo import save_simulation
 
     sim = save_simulation(

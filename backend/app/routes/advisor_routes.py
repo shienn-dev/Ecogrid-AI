@@ -16,25 +16,53 @@ def analyze():
         return jsonify({"status": "error", "message": "devices harus list tidak kosong"}), 400
     if len(devices) > 50:
         return jsonify({"status": "error", "message": "Maksimal 50 perangkat"}), 400
+    # Validate each device is dict-like to prevent crash
+    for i, d in enumerate(devices):
+        if not isinstance(d, dict):
+            return (
+                jsonify(
+                    {"status": "error", "message": f"Perangkat ke-{i + 1} harus berupa objek."}
+                ),
+                400,
+            )
 
     total_daily = data.get("total_daily_kwh")
     total_monthly = data.get("monthly_kwh") or data.get("total_monthly_kwh")
 
-    # Validate numbers if provided
+    # Validate numbers if provided — pakai validator (tolak NaN/Infinity)
+    from app.utils.validator import validate_numeric
+
     if total_daily is not None:
-        try:
-            total_daily = float(total_daily)
-            if total_daily < 0:
-                raise ValueError
-        except Exception:
-            return jsonify({"status": "error", "message": "total_daily_kwh harus angka >=0"}), 400
+        is_valid, val = validate_numeric(total_daily, "total_daily_kwh", min_value=0.0)
+        if not is_valid:
+            return jsonify({"status": "error", "message": val}), 400
+        total_daily = val
     if total_monthly is not None:
-        try:
-            total_monthly = float(total_monthly)
-            if total_monthly < 0:
-                raise ValueError
-        except Exception:
-            return jsonify({"status": "error", "message": "monthly_kwh harus angka >=0"}), 400
+        is_valid, val = validate_numeric(total_monthly, "monthly_kwh", min_value=0.0)
+        if not is_valid:
+            return jsonify({"status": "error", "message": val}), 400
+        total_monthly = val
+
+    # Validate device fields
+    for i, d in enumerate(devices):
+        if "watt" in d:
+            is_valid, val = validate_numeric(
+                d.get("watt"), f"watt perangkat ke-{i + 1}", min_value=0.0
+            )
+            if not is_valid:
+                return jsonify({"status": "error", "message": val}), 400
+        if "hours_per_day" in d:
+            is_valid, val = validate_numeric(
+                d.get("hours_per_day"), f"jam perangkat ke-{i + 1}", min_value=0.0, max_value=24.0
+            )
+            if not is_valid:
+                return jsonify({"status": "error", "message": val}), 400
+        if "hours" in d:
+            is_valid, val = validate_numeric(
+                d.get("hours"), f"jam perangkat ke-{i + 1}", min_value=0.0, max_value=24.0
+            )
+            if not is_valid:
+                return jsonify({"status": "error", "message": val}), 400
 
     result = AdvisorService.analyze(
         devices, total_daily_kwh=total_daily, total_monthly_kwh=total_monthly

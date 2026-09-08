@@ -42,7 +42,25 @@ def calculate_energy():
 
         validated_devices = []
         for i, dev in enumerate(devices):
-            name = dev.get("device_name", "").strip()
+            if not isinstance(dev, dict):
+                return (
+                    jsonify(
+                        {"status": "error", "message": f"Perangkat ke-{i + 1} harus berupa objek."}
+                    ),
+                    400,
+                )
+            name_raw = dev.get("device_name", "")
+            if not isinstance(name_raw, str):
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": f"Nama perangkat ke-{i + 1} harus berupa teks.",
+                        }
+                    ),
+                    400,
+                )
+            name = name_raw.strip()
             watt = dev.get("watt")
             hours_per_day = dev.get("hours_per_day")
 
@@ -118,7 +136,10 @@ def calculate_energy():
         return jsonify({"status": "success", "data": result})
 
     # Fallback ke mode single device
-    device_name = data.get("device_name", "").strip()
+    device_name_raw = data.get("device_name", "")
+    if not isinstance(device_name_raw, str):
+        return jsonify({"status": "error", "message": "device_name harus berupa teks."}), 400
+    device_name = device_name_raw.strip()
     watt = data.get("watt")
     hours_per_day = data.get("hours_per_day")
 
@@ -145,7 +166,7 @@ def calculate_energy():
     if not is_valid_hours:
         return jsonify({"status": "error", "message": hours_val}), 400
 
-    result = EnergyService.calculate(watt_val, hours_val)
+    result = EnergyService.calculate(float(watt_val), float(hours_val))
     # Escape device name for safe storage/display
     safe_name = html.escape(device_name)
     result["device_name"] = safe_name

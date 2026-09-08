@@ -349,6 +349,98 @@ class EcoGridTestCase(unittest.TestCase):
         self.assertEqual(res.headers.get("X-Content-Type-Options"), "nosniff")
         self.assertEqual(res.headers.get("X-Frame-Options"), "DENY")
 
+    def test_invalid_types_rejected(self):
+        """Device non-dict dan nama non-string harus ditolak 400 (bukan crash 500)"""
+        # device bukan object
+        r = self.client.post("/api/energy/calculate", json={"devices": ["nope"]})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("objek", r.get_json()["message"])
+        # device_name bukan teks
+        r = self.client.post(
+            "/api/energy/calculate",
+            json={"devices": [{"device_name": 123, "watt": 10, "hours_per_day": 5}]},
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("teks", r.get_json()["message"])
+
+    def test_nan_infinity_rejected(self):
+        """NaN dan Infinity harus ditolak agar tidak merusak JSON/perhitungan"""
+        for bad in ["NaN", "Infinity", "-Infinity"]:
+            r = self.client.post(
+                "/api/energy/calculate", json={"device_name": "X", "watt": bad, "hours_per_day": 5}
+            )
+            self.assertEqual(r.status_code, 400, f"watt={bad} harus ditolak")
+            self.assertIn("NaN/Infinity", r.get_json()["message"])
+        # cost & carbon juga
+        r = self.client.post(
+            "/api/cost/calculate", json={"daily_kwh": "NaN", "monthly_kwh": 30, "yearly_kwh": 365}
+        )
+        self.assertEqual(r.status_code, 400)
+        r = self.client.post(
+            "/api/carbon/calculate",
+            json={"daily_kwh": "Infinity", "monthly_kwh": 30, "yearly_kwh": 365},
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_advisor_invalid_input(self):
+        """Advisor harus menolak device non-dict dan jam negatif"""
+        r = self.client.post("/api/advisor/analyze", json={"devices": ["nope"]})
+        self.assertEqual(r.status_code, 400)
+        r = self.client.post(
+            "/api/advisor/analyze",
+            json={"devices": [{"device_name": "AC", "watt": 100, "hours": -5}]},
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_history_post_validation(self):
+        """POST /api/history harus validasi tipe, tidak 500"""
+        bad = {
+            "total_daily_kwh": "abc",
+            "total_monthly_kwh": 1,
+            "total_yearly_kwh": 1,
+            "monthly_cost": 1,
+            "monthly_carbon": 1,
+            "energy_score": "x",
+            "category": "Good",
+            "devices": [],
+        }
+        r = self.client.post("/api/history", json=bad)
+        self.assertEqual(r.status_code, 400)
+        # valid
+        good = {
+            "total_daily_kwh": 1.0,
+            "total_monthly_kwh": 30.0,
+            "total_yearly_kwh": 365.0,
+            "monthly_cost": 43341.0,
+            "monthly_carbon": 26.1,
+            "energy_score": 92,
+            "category": "Excellent",
+            "devices": [],
+        }
+        r = self.client.post("/api/history", json=good)
+        self.assertEqual(r.status_code, 201)
+        self.assertIn("id", r.get_json()["data"])
+
+    def test_sql_injection_safe(self):
+        """History id injection tidak boleh merusak (harus 404 bukan 500)"""
+        r = self.client.get("/api/history/1%20OR%201=1")
+        self.assertIn(r.status_code, (404, 400))
+        r = self.client.get("/api/history/1;DROP")
+        self.assertIn(r.status_code, (404, 400))
+
+    def test_solar_nan_rejected(self):
+        r = self.client.post(
+            "/api/solar/simulate", json={"roof_area": "NaN", "efficiency": 0.2, "sun_hours": 4.5}
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_malformed_json_returns_json(self):
+        r = self.client.post(
+            "/api/energy/calculate", data='{"invalid":', content_type="application/json"
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.get_json()["status"], "error")
+
 
 if __name__ == "__main__":
     unittest.main()
