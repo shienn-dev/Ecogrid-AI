@@ -227,8 +227,55 @@ class EcoGridTestCase(unittest.TestCase):
             },
         ]
         res_dirty = InsightService.generate_insights(devices_dirty, 21.9, 657.0)
-        self.assertEqual(res_dirty["category"], "Needs Improvement")
+        # Consumption tiers now align to PLN classes (130 kWh efficient baseline),
+        # so 657 kWh/month lands in the worst band.
+        self.assertEqual(res_dirty["category"], "Poor")
+        self.assertEqual(res_dirty["grade"], "D")
         self.assertLess(res_dirty["energy_score"], 50)
+
+    def test_score_grades_and_carbon_equivalents(self):
+        """Grade A-E banding and EPAsourced carbon equivalents"""
+        clean = [
+            {
+                "device_name": "LED TV",
+                "watt": 50,
+                "hours_per_day": 4,
+                "monthly_kwh": 6.0,
+                "contribution_percentage": 100.0,
+            }
+        ]
+        res = InsightService.generate_insights(clean, 0.2, 6.0)
+        self.assertEqual(res["grade"], "A")
+
+        # Carbon equivalents use EPA factor: 60 kg CO2/tree/year
+        equiv = InsightService.carbon_equivalents(178.7)
+        self.assertIsNotNone(equiv)
+        assert equiv is not None  # narrow type for static checkers
+        self.assertAlmostEqual(float(equiv["trees_year"]), round(178.7 * 12 / 60, 2), places=2)
+        self.assertGreater(float(equiv["motorcycle_km"]), 0)
+        # Zero carbon -> no equivalents
+        self.assertIsNone(InsightService.carbon_equivalents(0))
+
+    def test_consumption_tiers_pln_basis(self):
+        """Tier boundaries must follow PLN household class alignment (130/250 kWh)"""
+        dev = [
+            {
+                "device_name": "X",
+                "watt": 100,
+                "hours_per_day": 5,
+                "monthly_kwh": 12.0,
+                "contribution_percentage": 100.0,
+            }
+        ]
+        # Below 130 -> efficient
+        low = InsightService.generate_insights(dev, 4.0, 120.0)
+        self.assertTrue(any(i["title"] == "Konsumsi Efisien" for i in low["insights"]))
+        # 130-250 -> above average (1300 VA class)
+        mid = InsightService.generate_insights(dev, 5.0, 200.0)
+        self.assertTrue(any(i["title"] == "Konsumsi Di Atas Rata-rata" for i in mid["insights"]))
+        # >250 -> very high (2200 VA+ class)
+        high = InsightService.generate_insights(dev, 9.0, 300.0)
+        self.assertTrue(any(i["title"] == "Konsumsi Sangat Tinggi" for i in high["insights"]))
 
     def test_xss_escaping(self):
         """Device name dengan HTML harus di-escape"""
@@ -268,9 +315,13 @@ class EcoGridTestCase(unittest.TestCase):
         self.assertAlmostEqual(
             data["cost"]["monthly_cost"], data["total_monthly_kwh"] * 1444.70, places=1
         )
+        # Default emission factor is now sourced 0.68 kg CO2/kWh (was 0.87)
         self.assertAlmostEqual(
-            data["carbon"]["monthly_carbon_kg"], data["total_monthly_kwh"] * 0.87, places=2
+            data["carbon"]["monthly_carbon_kg"], data["total_monthly_kwh"] * 0.68, places=2
         )
+        # Relatable equivalents must be present
+        self.assertIn("carbon_equivalents", data)
+        self.assertIn("trees_year", data["carbon_equivalents"])
 
     def test_cost_yearly_consistency(self):
         """Fallback yearly harus 365/30 bukan 12"""
@@ -284,17 +335,99 @@ class EcoGridTestCase(unittest.TestCase):
         self.assertAlmostEqual(data["yearly_cost"], expected, places=1)
 
     def test_solar_simulate_success(self):
-        """Solar simulate menghasilkan kWp dan saving"""
+        """
+        Solar simulate produces realistic kWp and saving.
+
+        Formula now applies industry correction factors:
+          usable_area = 40 m2 x 0.85 = 34 m2
+          kWp         = 34 x 0.20 = 6.8 kWp
+          daily       = 6.8 x 4.5 x 0.75 (PR) = 22.95 kWh
+
+        Previously the app returned 8 kWp / 36 kWh/day because it assumed
+        100% roof usage and zero system losses - a ~57% overestimate.
+        """
         payload = {"roof_area": 40, "efficiency": 0.20, "sun_hours": 4.5}
         res = self.client.post(
             "/api/solar/simulate", data=json.dumps(payload), content_type="application/json"
         )
         self.assertEqual(res.status_code, 200)
         data = json.loads(res.data)["data"]
-        self.assertEqual(data["system_kwp"], 8.0)
-        self.assertEqual(data["daily_generation"], 36.0)
-        self.assertEqual(data["monthly_generation"], 1080.0)
+        self.assertEqual(data["usable_area_m2"], 34.0)
+        self.assertEqual(data["system_kwp"], 6.8)
+        self.assertAlmostEqual(data["daily_generation"], 22.95, places=2)
+        self.assertAlmostEqual(data["monthly_generation"], 688.5, places=1)
         self.assertGreater(data["estimated_saving"], 0)
+        # Performance ratio must be surfaced and honest
+        self.assertEqual(data["assumptions"]["performance_ratio"], 0.75)
+        self.assertEqual(data["assumptions"]["usable_area_factor"], 0.85)
+
+    def test_solar_offset(self):
+        """Solar offset relative to household usage"""
+        payload = {
+            "roof_area": 40,
+            "efficiency": 0.20,
+            "sun_hours": 4.5,
+            "household_monthly_kwh": 688.5,
+        }
+        res = self.client.post(
+            "/api/solar/simulate", data=json.dumps(payload), content_type="application/json"
+        )
+        self.assertEqual(res.status_code, 200)
+        offset = json.loads(res.data)["data"]["offset"]
+        self.assertIsNotNone(offset)
+        self.assertAlmostEqual(offset["coverage_percent"], 100.0, places=1)
+
+    def test_meta_presets_and_sources(self):
+        """Sourced reference data exposed via API (no frontend hardcoding)"""
+        res = self.client.get("/api/meta/presets")
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)["data"]
+        self.assertIn("tariffs", data)
+        self.assertIn("emission_factors", data)
+        self.assertEqual(data["defaults"]["emission_factor"], 0.68)
+        # Sources endpoint keeps the app honest
+        res = self.client.get("/api/meta/sources")
+        self.assertEqual(res.status_code, 200)
+        sources = json.loads(res.data)["data"]
+        self.assertTrue(any(s["field"] == "emission_factor" for s in sources))
+
+    def test_tariff_override(self):
+        """User-selected PLN class tariff must flow into the unified response"""
+        payload = {
+            "devices": [{"device_name": "AC", "watt": 1000, "hours_per_day": 10}],
+            "tariff_per_kwh": 605.0,  # 900 VA subsidised
+        }
+        res = self.client.post(
+            "/api/energy/calculate", data=json.dumps(payload), content_type="application/json"
+        )
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)["data"]
+        self.assertEqual(data["cost"]["tariff_per_kwh"], 605.0)
+        self.assertAlmostEqual(
+            data["cost"]["monthly_cost"], data["total_monthly_kwh"] * 605.0, places=1
+        )
+
+    def test_emission_factor_override(self):
+        """User-selected grid factor must flow through"""
+        payload = {
+            "devices": [{"device_name": "AC", "watt": 1000, "hours_per_day": 10}],
+            "emission_factor": 0.65,  # Java-Bali
+        }
+        res = self.client.post(
+            "/api/energy/calculate", data=json.dumps(payload), content_type="application/json"
+        )
+        data = json.loads(res.data)["data"]
+        self.assertEqual(data["carbon"]["emission_factor"], 0.65)
+
+    def test_emission_factor_default_is_sourced(self):
+        """Default emission factor must be the sourced 0.68, not the old 0.87"""
+        payload = {"daily_kwh": 10, "monthly_kwh": 300, "yearly_kwh": 3650}
+        res = self.client.post(
+            "/api/carbon/calculate", data=json.dumps(payload), content_type="application/json"
+        )
+        data = json.loads(res.data)["data"]
+        self.assertEqual(data["emission_factor"], 0.68)
+        self.assertAlmostEqual(data["monthly_carbon_kg"], round(300 * 0.68, 4), places=4)
 
     def test_solar_validation(self):
         payload = {"roof_area": 0, "efficiency": 0.20, "sun_hours": 4.5}

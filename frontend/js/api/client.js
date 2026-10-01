@@ -29,8 +29,10 @@ async function request(path, { method = "GET", body, signal, headers = {} } = {}
 export const api = {
   calculateEnergy(devices, opts = {}) {
     const save = opts.save ? "?save=true" : "";
-    // unified expects {devices}
-    return request(`/api/energy/calculate${save}`, { method: "POST", body: { devices } });
+    const body = { devices };
+    if (opts.tariffPerKwh != null) body.tariff_per_kwh = opts.tariffPerKwh;
+    if (opts.emissionFactor != null) body.emission_factor = opts.emissionFactor;
+    return request(`/api/energy/calculate${save}`, { method: "POST", body });
   },
   calculateCost(payload) {
     return request(`/api/cost/calculate`, { method: "POST", body: payload });
@@ -56,5 +58,15 @@ export const api = {
   getAdvisorTips(device) {
     const q = device ? `?device=${encodeURIComponent(device)}` : "";
     return request(`/api/advisor/tips${q}`);
+  },
+  // Sourced reference data (tariffs, emission factors, solar assumptions)
+  getPresets() {
+    return request(`/api/meta/presets`);
+  },
+  getSources() {
+    return request(`/api/meta/sources`);
+  },
+  getSolarPresets() {
+    return request(`/api/solar/presets`);
   },
 };

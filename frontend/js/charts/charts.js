@@ -114,8 +114,25 @@ export async function renderDonut(canvasId, rankedDevices) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
   if (instances[canvasId]) instances[canvasId].destroy();
-  const labels = rankedDevices.map((d) => `${d.device_name} (${d.contribution_percentage.toFixed(1)}%)`);
-  const data = rankedDevices.map((d) => d.contribution_percentage);
+
+  // Carbon Design System guidance: donut loses readability beyond ~5 slices,
+  // so cap at top 5 and fold the remainder into a single "Lainnya" slice.
+  const MAX_SLICES = 5;
+  let top = rankedDevices;
+  let otherPct = 0;
+  if (rankedDevices.length > MAX_SLICES) {
+    top = rankedDevices.slice(0, MAX_SLICES);
+    otherPct = rankedDevices
+      .slice(MAX_SLICES)
+      .reduce((sum, d) => sum + d.contribution_percentage, 0);
+  }
+
+  const labels = top.map((d) => `${d.device_name} (${d.contribution_percentage.toFixed(1)}%)`);
+  const data = top.map((d) => d.contribution_percentage);
+  if (otherPct > 0) {
+    labels.push(`Lainnya (${otherPct.toFixed(1)}%)`);
+    data.push(otherPct);
+  }
   const colors = ["#0f766e", "#0e7490", "#475569", "#d97706", "#059669", "#94a3b8"];
   instances[canvasId] = new Chart(ctx, {
     type: "doughnut",

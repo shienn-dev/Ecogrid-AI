@@ -121,10 +121,32 @@ function renderKpis(data) {
         <div class="kpi-icon"><i class="fa-solid fa-gauge-high"></i></div>
       </div>
       <div class="kpi-value tabular">${Number(data.energy_score) || 0} <span style="font-size:0.55em;font-weight:600;color:var(--text-tertiary)">/100</span></div>
-      <div class="kpi-sub"><span class="score-badge ${badgeClass(data.category)}" style="padding:4px 8px;font-size:11px">${sanitizeHtml(data.category || "-")}</span></div>
+      <div class="kpi-sub"><span class="score-badge ${badgeClass(data.category)}" style="padding:4px 8px;font-size:11px">${data.grade ? data.grade + " — " : ""}${sanitizeHtml(data.category || "-")}</span></div>
       <div class="kpi-foot">Semakin tinggi, semakin efisien</div>
     </div>
   `;
+
+  // Relatable carbon equivalents (EPA-sourced), rendered below the KPI grid
+  const eq = data.carbon_equivalents;
+  const eqWrap = document.getElementById("carbon-equivalents");
+  if (eqWrap) {
+    if (eq) {
+      eqWrap.innerHTML = `
+        <div class="card" style="margin-top:16px">
+          <div class="card-pad" style="padding:16px">
+            <div class="section-title" style="margin-bottom:10px"><i class="fa-solid fa-scale-balanced"></i> Setara dengan</div>
+            <div class="delta" style="flex-wrap:wrap; gap:16px">
+              <span><i class="fa-solid fa-tree" style="color:var(--success)"></i> <strong>${eq.trees_year}</strong> pohon dewasa / tahun</span>
+              <span><i class="fa-solid fa-motorcycle" style="color:var(--warning)"></i> <strong>${Number(eq.motorcycle_km).toLocaleString("id-ID")}</strong> km berkendara motor</span>
+              <span><i class="fa-solid fa-lightbulb" style="color:var(--info)"></i> <strong>${Number(eq.led_hours).toLocaleString("id-ID")}</strong> jam lampu LED</span>
+            </div>
+            <p class="help" style="margin-top:8px">Faktor konversi: US EPA Greenhouse Gas Equivalencies Calculator.</p>
+          </div>
+        </div>`;
+    } else {
+      eqWrap.innerHTML = "";
+    }
+  }
 }
 
 function badgeClass(cat) {
@@ -313,7 +335,15 @@ async function handleSubmit(e) {
   rankingList.innerHTML = `<div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px"></div>`;
 
   try {
-    const res = await api.calculateEnergy(devices, { save: true });
+    // Respect the PLN tariff class selected by the user (sourced presets)
+    const tariffSel = document.getElementById("tariff-preset");
+    const tariffPerKwh = tariffSel
+      ? parseFloat(tariffSel.selectedOptions[0]?.dataset.tariff || tariffSel.value)
+      : undefined;
+    const res = await api.calculateEnergy(devices, {
+      save: true,
+      tariffPerKwh: Number.isFinite(tariffPerKwh) ? tariffPerKwh : undefined,
+    });
     const data = res.data;
     currentResult = data;
     setState({ result: data, error: null });

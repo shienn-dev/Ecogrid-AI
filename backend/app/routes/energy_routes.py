@@ -16,6 +16,21 @@ def calculate_energy():
     data = request.get_json() or {}
     max_devices = current_app.config.get("MAX_DEVICES", 50)
 
+    # Optional tariff / emission-factor overrides (user picks PLN class)
+    tariff_override: float | None = None
+    if data.get("tariff_per_kwh") is not None:
+        ok, val = validate_numeric(data.get("tariff_per_kwh"), "tariff_per_kwh", min_value=0)
+        if not ok:
+            return jsonify({"status": "error", "message": val}), 400
+        tariff_override = float(val)
+
+    emission_override: float | None = None
+    if data.get("emission_factor") is not None:
+        ok, val = validate_numeric(data.get("emission_factor"), "emission_factor", min_value=0)
+        if not ok:
+            return jsonify({"status": "error", "message": val}), 400
+        emission_override = float(val)
+
     # Memeriksa jika request bertipe list perangkat (multiple)
     if "devices" in data:
         devices = data["devices"]
@@ -104,13 +119,24 @@ def calculate_energy():
         )
         result["energy_score"] = insights_data["energy_score"]
         result["category"] = insights_data["category"]
+        result["grade"] = insights_data.get("grade")
         result["insights"] = insights_data["insights"]
-        # Inline cost/carbon unified
+        # Inline cost/carbon unified (honouring user tariff / factor overrides)
         result["cost"] = CostService.calculate_all(
-            result["total_daily_kwh"], result["total_monthly_kwh"], result["total_yearly_kwh"]
+            result["total_daily_kwh"],
+            result["total_monthly_kwh"],
+            result["total_yearly_kwh"],
+            tariff_override,
         )
         result["carbon"] = CarbonService.calculate_all(
-            result["total_daily_kwh"], result["total_monthly_kwh"], result["total_yearly_kwh"]
+            result["total_daily_kwh"],
+            result["total_monthly_kwh"],
+            result["total_yearly_kwh"],
+            emission_override,
+        )
+        # Relatable carbon equivalents (EPA-sourced factors)
+        result["carbon_equivalents"] = InsightService.carbon_equivalents(
+            result["carbon"]["monthly_carbon_kg"]
         )
 
         # Persist if ?save=true
@@ -229,9 +255,11 @@ def calculate_energy():
         ],
         "energy_score": insights_data["energy_score"],
         "category": insights_data["category"],
+        "grade": insights_data.get("grade"),
         "insights": insights_data["insights"],
         "cost": cost_inline,
         "carbon": carbon_inline,
+        "carbon_equivalents": InsightService.carbon_equivalents(carbon_inline["monthly_carbon_kg"]),
     }
     if history_id is not None:
         resp_data["history_id"] = history_id

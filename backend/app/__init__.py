@@ -117,6 +117,12 @@ def create_app(config_class=Config):
         app.register_blueprint(advisor_bp, url_prefix="/api/advisor")
     except ImportError:
         pass
+    try:
+        from app.routes.meta_routes import meta_bp
+
+        app.register_blueprint(meta_bp, url_prefix="/api/meta")
+    except ImportError:
+        pass
 
     # DB init if available
     try:

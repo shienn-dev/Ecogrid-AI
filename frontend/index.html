@@ -66,13 +66,22 @@
                 <button type="button" class="slider-nav slider-next" aria-label="Geser kanan" onclick="document.getElementById('device-list').scrollBy({left:360,behavior:'smooth'})"><i class="fa-solid fa-chevron-right"></i></button>
               </div>
 
-              <div style="display:flex; gap:8px; margin-top:14px; align-items:center">
+              <div style="display:flex; gap:8px; margin-top:14px; align-items:center; flex-wrap:wrap">
                 <button type="button" id="btn-add-device" class="btn btn-secondary" style="flex:1">
                   <i class="fa-solid fa-plus"></i> Tambah Perangkat
                 </button>
                 <button type="button" id="btn-sample" class="btn btn-ghost" style="flex:1"><i class="fa-solid fa-wand-magic-sparkles"></i> Contoh</button>
                 <button type="submit" id="hitung-btn" class="btn btn-primary" style="flex:1.2"><i class="fa-solid fa-calculator"></i> Hitung</button>
               </div>
+
+              <div class="field" style="margin-top:14px; max-width:280px">
+                <label class="label" for="tariff-preset">Golongan tarif PLN</label>
+                <select id="tariff-preset" class="input" style="padding-left:12px">
+                  <option value="1300VA" selected>R-1/TR 1300 VA — Rp 1.444,70</option>
+                </select>
+                <div class="help">Sumber: PLN Tarif Adjustment. Angka lain dapat diverifikasi di situs PLN.</div>
+              </div>
+
               <p class="help" style="margin-top:10px"><i class="fa-solid fa-circle-info"></i> Validasi ketat: nama wajib, Watt &gt;0, Jam 0.01–24. Maks 50 perangkat.</p>
             </form>
           </div>
@@ -123,17 +132,38 @@
                 </select>
               </div>
               <div class="field">
-                <label class="label" for="solar-sun">Peak Sun Hours</label>
+                <label class="label" for="solar-city">Lokasi (Peak Sun Hours)</label>
+                <select id="solar-city" class="input" style="padding-left:12px">
+                  <option value="4.5" selected>Jakarta — 4.5 kWh/m²/hari</option>
+                  <option value="5.0">Surabaya / Denpasar — 5.0</option>
+                  <option value="4.4">Medan / Bandung — 4.4</option>
+                  <option value="5.1">Makassar — 5.1</option>
+                  <option value="5.5">Kupang — 5.5</option>
+                </select>
+                <div class="help">Sumber: Global Solar Atlas (rata-rata jangka panjang)</div>
+              </div>
+              <div class="field">
+                <label class="label" for="solar-sun">Peak Sun Hours (manual)</label>
                 <div class="input-wrap">
                   <i class="fa-solid fa-sun input-icon"></i>
                   <input id="solar-sun" class="input" type="number" min="1" max="10" step="0.1" value="4.5" />
                   <span class="input-badge">jam</span>
                 </div>
-                <div class="help">Preset: Jakarta 4.5 · Surabaya 5.0 · Kupang 5.5</div>
               </div>
               <button type="button" id="btn-solar" class="btn btn-secondary btn-block"><i class="fa-solid fa-bolt"></i> Hitung Potensi Surya</button>
               <div id="solar-result" style="display:none; margin-top:16px"></div>
-              <p class="help" style="margin-top:12px">Estimasi sederhana: <em>kWp = luas × efisiensi × 1kW/m²</em>. Bukan pengukuran fisik presisi.</p>
+              <details style="margin-top:12px">
+                <summary class="help" style="cursor:pointer">Asumsi perhitungan &amp; sumber</summary>
+                <p class="help" style="margin-top:8px">
+                  <strong>kWp</strong> = luas atap × 0.85 (area terpakai) × efisiensi<br>
+                  <strong>kWh/hari</strong> = kWp × peak sun hours × 0.75 (Performance Ratio)
+                </p>
+                <p class="help" style="margin-top:6px">
+                  Performance Ratio 0.75 menutup rugi inverter, kabel, suhu, kotoran, dan shading
+                  (NREL PVWatts / IEC 61724). Estimasi — belum memodelkan kemiringan atap,
+                  arah hadap, atau variasi cuaca musiman.
+                </p>
+              </details>
             </div>
           </div>
         </div>
@@ -171,6 +201,7 @@
       <div id="results" style="display:none">
         <!-- KPI -->
         <div id="kpi-grid" class="kpi-grid" role="region" aria-label="Key metrics"></div>
+        <div id="carbon-equivalents" aria-live="polite"></div>
 
         <!-- Analytics -->
         <div id="analytics" class="analytics-grid" style="margin-top:16px">
@@ -318,55 +349,125 @@
   <!-- Toast stack moved to body via JS -->
   <script type="module" src="js/dashboard.js"></script>
   <script type="module">
-    // Solar wiring — robust, works even if dashboard.js has error, with DOMContentLoaded
+    // Reference data + solar wiring. Runs independently of dashboard.js.
     import { api } from "./js/api/client.js";
     import { fmtRupiah, fmtKwh } from "./js/utils/format.js";
     import { showToast } from "./js/utils/dom.js";
+
+    // Populate tariff presets from backend (keeps sourced data in one place)
+    async function loadTariffs() {
+      const sel = document.getElementById("tariff-preset");
+      if (!sel) return;
+      try {
+        const res = await api.getPresets();
+        const tariffs = res.data.tariffs || {};
+        sel.innerHTML = Object.entries(tariffs)
+          .map(([key, t]) => {
+            const rp = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2 }).format(t.tariff);
+            const selected = key === "1300VA" ? " selected" : "";
+            return `<option value="${key}" data-tariff="${t.tariff}"${selected}>${t.label} — Rp ${rp}</option>`;
+          })
+          .join("");
+      } catch (e) {
+        console.warn("Tariff presets unavailable", e);
+      }
+    }
     function initSolar() {
       const btn = document.getElementById("btn-solar");
       const res = document.getElementById("solar-result");
-      if (!btn || !res) { console.warn("Solar elements not found", btn, res); return; }
-      console.log("Solar init OK", btn);
+      if (!btn || !res) return;
+      // City preset drives the manual PSH field (source: Global Solar Atlas)
+      const citySel = document.getElementById("solar-city");
+      const sunInput = document.getElementById("solar-sun");
+      if (citySel && sunInput) {
+        citySel.addEventListener("change", () => { sunInput.value = citySel.value; });
+      }
       btn.addEventListener("click", async () => {
-        console.log("Solar click", {
-          roof: document.getElementById("solar-roof")?.value,
-          eff: document.getElementById("solar-eff")?.value,
-          sun: document.getElementById("solar-sun")?.value
-        });
         const roof = parseFloat(document.getElementById("solar-roof")?.value);
         const eff = parseFloat(document.getElementById("solar-eff")?.value);
         const sun = parseFloat(document.getElementById("solar-sun")?.value);
-        if (!roof || roof <=0 || roof>1000) return showToast("Luas atap 1–1000 m²", "error");
-        if (!eff || eff<0.05 || eff>0.30) return showToast("Efisiensi 0.05–0.30", "error");
-        if (!sun || sun<1 || sun>10) return showToast("Sun hours 1–10", "error");
-        btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghitung...';
+        if (!roof || roof <= 0 || roof > 1000) return showToast("Luas atap 1–1000 m²", "error");
+        if (!eff || eff < 0.05 || eff > 0.30) return showToast("Efisiensi 0.05–0.30", "error");
+        if (!sun || sun < 1 || sun > 10) return showToast("Sun hours 1–10", "error");
+
+        btn.disabled = true;
+        const old = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghitung...';
+
+        // Pass current household usage (if a calculation has run) so the solar
+        // result can show how much of the household demand it covers.
+        const usage = window.__ecogrid?.getState()?.result?.total_monthly_kwh;
+
         try {
-          console.log("Solar request", { roof_area: roof, efficiency: eff, sun_hours: sun });
-          const data = await api.simulateSolar({ roof_area: roof, efficiency: eff, sun_hours: sun });
-          console.log("Solar response", data);
+          const data = await api.simulateSolar({
+            roof_area: roof,
+            efficiency: eff,
+            sun_hours: sun,
+            household_monthly_kwh: usage || undefined,
+          });
           const d = data.data;
           res.style.display = "block";
+
+          const offsetBlock = d.offset
+            ? `<div class="kpi" style="padding:16px; --kpi-accent: var(--primary)">
+                 <div class="kpi-label">Cakupan Kebutuhan</div>
+                 <div class="kpi-value" style="font-size:1.25rem">${d.offset.coverage_percent}% <span style="font-size:0.6em;color:var(--text-tertiary)">terpenuhi</span></div>
+                 <div class="kpi-sub">${d.offset.remaining_monthly_kwh} kWh/bln masih dari PLN</div>
+               </div>`
+            : "";
+
           res.innerHTML = `
             <div class="kpi-grid" style="grid-template-columns:1fr 1fr">
-              <div class="kpi" style="padding:16px"><div class="kpi-label">Kapasitas</div><div class="kpi-value" style="font-size:1.25rem">${d.system_kwp.toFixed(2)} <span style="font-size:0.6em;color:var(--text-tertiary)">kWp</span></div><div class="kpi-sub">Atap ${roof} m² × ${(eff*100).toFixed(0)}%</div></div>
-              <div class="kpi" style="padding:16px"><div class="kpi-label">Generasi</div><div class="kpi-value" style="font-size:1.25rem">${fmtKwh(d.daily_generation)} <span style="font-size:0.6em;color:var(--text-tertiary)">kWh/hari</span></div><div class="kpi-sub">${fmtKwh(d.monthly_generation)} kWh/bulan · ${fmtKwh(d.yearly_generation)} kWh/tahun</div></div>
-              <div class="kpi" style="padding:16px"><div class="kpi-label">Hemat Biaya</div><div class="kpi-value" style="font-size:1.1rem">${fmtRupiah(d.estimated_saving)} <span style="font-size:0.6em;color:var(--text-tertiary)">/bulan</span></div><div class="kpi-sub">~ ${fmtRupiah(d.estimated_saving*12)} /tahun</div></div>
-              <div class="kpi" style="padding:16px"><div class="kpi-label">Kurangi CO₂</div><div class="kpi-value" style="font-size:1.1rem">${(d.carbon_reduction_kg||0).toFixed(1)} <span style="font-size:0.6em;color:var(--text-tertiary)">kg/bulan</span></div><div class="kpi-sub">≈ ${((d.carbon_reduction_kg||0)*12).toFixed(0)} kg/tahun</div></div>
+              <div class="kpi" style="padding:16px">
+                <div class="kpi-label">Kapasitas</div>
+                <div class="kpi-value" style="font-size:1.25rem">${d.system_kwp.toFixed(2)} <span style="font-size:0.6em;color:var(--text-tertiary)">kWp</span></div>
+                <div class="kpi-sub">Area terpakai ${d.usable_area_m2} m² dari ${roof} m²</div>
+              </div>
+              <div class="kpi" style="padding:16px">
+                <div class="kpi-label">Generasi</div>
+                <div class="kpi-value" style="font-size:1.25rem">${fmtKwh(d.daily_generation)} <span style="font-size:0.6em;color:var(--text-tertiary)">kWh/hari</span></div>
+                <div class="kpi-sub">${fmtKwh(d.monthly_generation)} kWh/bln · ${fmtKwh(d.yearly_generation)} kWh/thn</div>
+              </div>
+              <div class="kpi" style="padding:16px">
+                <div class="kpi-label">Hemat Biaya</div>
+                <div class="kpi-value" style="font-size:1.1rem">${fmtRupiah(d.estimated_saving)} <span style="font-size:0.6em;color:var(--text-tertiary)">/bln</span></div>
+                <div class="kpi-sub">~ ${fmtRupiah(d.yearly_saving)} /tahun</div>
+              </div>
+              <div class="kpi" style="padding:16px">
+                <div class="kpi-label">Kurangi CO₂</div>
+                <div class="kpi-value" style="font-size:1.1rem">${(d.carbon_reduction_kg || 0).toFixed(1)} <span style="font-size:0.6em;color:var(--text-tertiary)">kg/bln</span></div>
+                <div class="kpi-sub">≈ ${((d.yearly_carbon_reduction_kg) || 0).toFixed(0)} kg/tahun</div>
+              </div>
+              ${offsetBlock}
+              <div class="kpi" style="padding:16px">
+                <div class="kpi-label">Balik Modal</div>
+                <div class="kpi-value" style="font-size:1.1rem">${d.payback_years != null ? d.payback_years.toFixed(1) + " <span style='font-size:0.6em;color:var(--text-tertiary)'>tahun</span>" : "—"}</div>
+                <div class="kpi-sub">Estimasi biaya sistem ${fmtRupiah(d.system_cost_estimate)}</div>
+              </div>
             </div>
-            <p class="help" style="margin-top:12px">Asumsi: 1 kW/m² irradiance, tanpa shading/tilt/orientasi. Estimasi, bukan pengukuran presisi.</p>
+            <p class="help" style="margin-top:12px">
+              Performance Ratio <strong>${d.assumptions.performance_ratio}</strong> ·
+              area terpakai <strong>${d.assumptions.usable_area_factor}</strong> ·
+              ${d.assumptions.note}
+            </p>
           `;
-          res.scrollIntoView({behavior:'smooth', block:'nearest'});
-        } catch(e){
-          console.error("Solar error", e);
-          showToast(e.message||"Gagal simulasi surya","error");
+          res.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        } catch (e) {
+          showToast(e.message || "Gagal simulasi surya", "error");
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = old;
         }
-        finally { btn.disabled=false; btn.innerHTML=old; }
       });
     }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initSolar);
-    } else {
+    function boot() {
+      loadTariffs();
       initSolar();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
     }
   </script>
 </body>
