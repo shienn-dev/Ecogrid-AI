@@ -1,41 +1,46 @@
-import { escapeHtml } from "../utils/format.js";
-
 export function createDeviceRow(index, onRemove) {
   const card = document.createElement("div");
   card.className = "device-card";
   card.dataset.index = String(index);
+  // Compact card: name on its own line, watt + hours share a row so the
+  // slider shows real content rather than a tall empty column.
   card.innerHTML = `
     <div class="device-head">
-      <div class="device-title"><i class="fa-solid fa-plug"></i> Perangkat #${index + 1}</div>
+      <div class="device-title"><i class="fa-solid fa-plug"></i> Perangkat ${index + 1}</div>
       <button type="button" class="btn-remove" aria-label="Hapus perangkat">
-        <i class="fa-solid fa-trash"></i>
+        <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
     <div class="field">
-      <label class="label" for="dev-name-${index}">Nama perangkat</label>
-      <div class="input-wrap">
-        <i class="fa-solid fa-tag input-icon"></i>
-        <input id="dev-name-${index}" class="input device-name" type="text" placeholder="Contoh: AC, Kulkas, TV" autocomplete="off" required aria-describedby="err-name-${index}" />
-      </div>
+      <label class="label" for="dev-name-${index}">Nama</label>
+      <input id="dev-name-${index}" class="input device-name" type="text"
+             placeholder="AC, Kulkas, TV" autocomplete="off" required
+             aria-describedby="err-name-${index}" />
       <div id="err-name-${index}" class="field-error" role="alert"></div>
     </div>
-    <div class="field">
-      <label class="label" for="dev-watt-${index}">Daya (Watt)</label>
-      <div class="input-wrap">
-        <i class="fa-solid fa-bolt input-icon"></i>
-        <input id="dev-watt-${index}" class="input device-watt" type="number" inputmode="decimal" placeholder="Contoh: 150" min="0.1" step="any" required aria-describedby="err-watt-${index}" />
-        <span class="input-badge">W</span>
+    <div class="device-fields">
+      <div class="field">
+        <label class="label" for="dev-watt-${index}">Daya</label>
+        <div class="input-wrap">
+          <input id="dev-watt-${index}" class="input device-watt" type="number"
+                 inputmode="decimal" placeholder="150" min="0.1" step="any" required
+                 style="padding-left:10px; padding-right:26px"
+                 aria-describedby="err-watt-${index}" />
+          <span class="input-badge">W</span>
+        </div>
+        <div id="err-watt-${index}" class="field-error" role="alert"></div>
       </div>
-      <div id="err-watt-${index}" class="field-error" role="alert"></div>
-    </div>
-    <div class="field">
-      <label class="label" for="dev-hours-${index}">Jam / hari</label>
-      <div class="input-wrap">
-        <i class="fa-regular fa-clock input-icon"></i>
-        <input id="dev-hours-${index}" class="input device-hours" type="number" inputmode="decimal" placeholder="Contoh: 8" min="0.01" max="24" step="any" required aria-describedby="err-hours-${index}" />
-        <span class="input-badge">Jam</span>
+      <div class="field">
+        <label class="label" for="dev-hours-${index}">Jam/hari</label>
+        <div class="input-wrap">
+          <input id="dev-hours-${index}" class="input device-hours" type="number"
+                 inputmode="decimal" placeholder="8" min="0.01" max="24" step="any" required
+                 style="padding-left:10px; padding-right:26px"
+                 aria-describedby="err-hours-${index}" />
+          <span class="input-badge">jam</span>
+        </div>
+        <div id="err-hours-${index}" class="field-error" role="alert"></div>
       </div>
-      <div id="err-hours-${index}" class="field-error" role="alert"></div>
     </div>
   `;
   const btn = card.querySelector(".btn-remove");
@@ -118,23 +123,40 @@ export function readDevices(container) {
 
 export function reindex(container) {
   const cards = [...container.querySelectorAll(".device-card")];
+
   cards.forEach((card, i) => {
     card.dataset.index = String(i);
-    card.querySelector(".device-title").innerHTML = `<i class="fa-solid fa-plug"></i> Perangkat #${i+1}`;
-    const nameInput = card.querySelector(".device-name");
-    const wattInput = card.querySelector(".device-watt");
-    const hoursInput = card.querySelector(".device-hours");
-    nameInput.id = `dev-name-${i}`;
-    wattInput.id = `dev-watt-${i}`;
-    hoursInput.id = `dev-hours-${i}`;
-    // update label for
-    card.querySelectorAll(".label")[0].setAttribute("for", `dev-name-${i}`);
-    card.querySelectorAll(".label")[1].setAttribute("for", `dev-watt-${i}`);
-    card.querySelectorAll(".label")[2].setAttribute("for", `dev-hours-${i}`);
+
+    const title = card.querySelector(".device-title");
+    title.innerHTML = `<i class="fa-solid fa-plug"></i> Perangkat ${i + 1}`;
+
+    // IDs must be unique and labels must point at the right input
+    const pairs = [
+      [".device-name", `dev-name-${i}`, `err-name-${i}`],
+      [".device-watt", `dev-watt-${i}`, `err-watt-${i}`],
+      [".device-hours", `dev-hours-${i}`, `err-hours-${i}`],
+    ];
+    pairs.forEach(([inputSel, id, errId]) => {
+      const input = card.querySelector(inputSel);
+      if (!input) return;
+      input.id = id;
+      input.setAttribute("aria-describedby", errId);
+    });
+
+    const labels = card.querySelectorAll(".label");
+    if (labels[0]) labels[0].setAttribute("for", `dev-name-${i}`);
+    if (labels[1]) labels[1].setAttribute("for", `dev-watt-${i}`);
+    if (labels[2]) labels[2].setAttribute("for", `dev-hours-${i}`);
+
+    const errs = card.querySelectorAll(".field-error");
+    if (errs[0]) errs[0].id = `err-name-${i}`;
+    if (errs[1]) errs[1].id = `err-watt-${i}`;
+    if (errs[2]) errs[2].id = `err-hours-${i}`;
   });
-  // toggle remove visibility
-  cards.forEach(c => {
-    const btn = c.querySelector(".btn-remove");
-    btn.style.display = cards.length <= 1 ? "none" : "grid";
+
+  // Keep at least one row; hide the remove control when it is the only one.
+  cards.forEach((card) => {
+    const btn = card.querySelector(".btn-remove");
+    if (btn) btn.style.display = cards.length <= 1 ? "none" : "grid";
   });
 }

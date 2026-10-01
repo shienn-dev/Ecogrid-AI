@@ -1,13 +1,18 @@
-/* Layout — header, container, grid */
+/* Layout — shell, grid, responsive rhythm
+ *
+ * Carbon dashboard guidance:
+ *  • strong hierarchy — most important data occupies the largest area
+ *  • F-pattern — most important top-left, least important bottom-right
+ *  • whitespace separates/relates, it is not decoration
+ */
 
+/* --------------------------------------------------------------------- SHELL */
 .topbar {
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 50;
   height: var(--header-h);
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: saturate(180%) blur(8px);
-  -webkit-backdrop-filter: saturate(180%) blur(8px);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -17,176 +22,205 @@
   width: 100%;
   max-width: var(--container-max);
   margin: 0 auto;
-  padding: 0 var(--space-6);
+  padding: 0 var(--sp-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-6);
+  gap: var(--sp-6);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  gap: var(--sp-3);
   color: var(--text);
   text-decoration: none;
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
 }
+.brand:hover {
+  text-decoration: none;
+}
+
 .brand-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-lg);
+  background: var(--primary);
   display: grid;
   place-items: center;
-  color: white;
-  font-size: 1.1rem;
-  box-shadow: var(--shadow-sm);
+  color: #fff;
+  font-size: 15px;
+  flex-shrink: 0;
 }
-.brand-text { font-size: 1.15rem; }
+
+.brand-text {
+  font-size: var(--fs-16);
+  line-height: 1.1;
+  display: block;
+}
+
 .brand-sub {
-  font-size: var(--text-xs);
+  display: block;
+  font-size: var(--fs-11);
   font-weight: 600;
   color: var(--text-tertiary);
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
-  margin-left: var(--space-1);
 }
 
 .nav {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--sp-1);
 }
+
 .nav-link {
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
+  padding: 7px 11px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-13);
   font-weight: 500;
   color: var(--text-secondary);
   text-decoration: none;
-  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+  transition: background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+  white-space: nowrap;
 }
-.nav-link:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
-.nav-link[aria-current="page"] { background: var(--surface-2); color: var(--text); font-weight: 600; }
+.nav-link:hover {
+  background: var(--surface-sunken);
+  color: var(--text);
+  text-decoration: none;
+}
+.nav-link[aria-current="page"] {
+  background: var(--primary-tint);
+  color: var(--primary);
+  font-weight: 600;
+}
+
 .nav-badge {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: var(--radius-full);
-  background: var(--surface-3);
+  padding: 1px 5px;
+  border-radius: var(--r-sm);
+  background: var(--gray-20);
   color: var(--text-tertiary);
-  margin-left: 6px;
-  vertical-align: middle;
+  margin-left: 5px;
+  vertical-align: 1px;
 }
 
+/* ------------------------------------------------------------------ CONTAINER */
 .container {
   max-width: var(--container-max);
   margin: 0 auto;
-  padding: var(--space-6);
+  padding: var(--sp-6);
 }
 
+/* Page head — tight. Carbon: limit metrics, don't waste the first screen. */
 .page-head {
-  margin: var(--space-6) auto var(--space-8);
   max-width: var(--container-max);
-  padding: 0 var(--space-6);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-6) var(--sp-4);
 }
-.page-title { font-size: var(--text-2xl); }
-.page-desc { margin-top: 6px; max-width: 68ch; color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.6; }
-
-/* Main layout: desktop 420px sticky left + 1fr right, tablet stacked */
-.app-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-6);
-  align-items: start;
+.page-title {
+  font-size: var(--fs-24);
+  font-weight: 700;
 }
-@media (min-width: 1024px) {
-  .app-grid {
-    grid-template-columns: 420px 1fr;
-    gap: var(--space-8);
-  }
-  .config-col { position: sticky; top: calc(var(--header-h) + 24px); }
+.page-desc {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-13);
+  color: var(--text-tertiary);
+  max-width: 76ch;
 }
 
-/* NEW: Top config — device wide + side stack, results below */
+/* ---------------------------------------------------------------- TOP REGION
+ * Inputs first (the user's job), then the results they produce.
+ * Desktop: config takes the larger share — that is where the work happens.
+ */
 .top-config-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-6);
+  gap: var(--gap-card);
   align-items: start;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--gap-section);
 }
-@media (min-width: 1024px) {
+@media (min-width: 1100px) {
   .top-config-grid {
-    grid-template-columns: 1fr 380px;
-    gap: var(--space-6);
+    grid-template-columns: minmax(0, 1fr) 340px;
   }
-}
-.side-stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
 }
 .top-config-grid > * {
   min-width: 0;
 }
-.device-config-wide {
-  overflow: hidden;
-}
-.device-config-wide .card-pad {
-  padding-bottom: var(--space-4);
+
+.left-stack,
+.side-stack {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  gap: var(--gap-card);
   min-width: 0;
 }
+
 .results-below {
   display: block;
 }
 
-/* Sub-grid for KPI */
+/* --------------------------------------------------------------------- KPI
+ * Carbon: "the most important data should have the highest contrast and
+ * occupy the largest area." One prominent metric + three supporting.
+ */
 .kpi-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-4);
+  gap: var(--gap-card);
 }
-@media (min-width: 640px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 560px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
-@media (min-width: 1280px) {
-  .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+@media (min-width: 1180px) {
+  .kpi-grid {
+    grid-template-columns: 1.25fr 1fr 1fr 1fr;
+  }
 }
 
-/* Analytics grid */
+/* --------------------------------------------------------------- ANALYTICS */
 .analytics-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-6);
+  gap: var(--gap-card);
 }
 @media (min-width: 1024px) {
-  .analytics-grid { grid-template-columns: 1.2fr 0.8fr; }
+  .analytics-grid {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  }
 }
 
-/* Charts grid */
+/* ------------------------------------------------------------------ CHARTS
+ * Carbon: consistent layout/spacing across charts; legends same position.
+ */
 .charts-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-6);
+  gap: var(--gap-card);
 }
-@media (min-width: 768px) {
-  .charts-grid { grid-template-columns: 1fr 1fr; }
+@media (min-width: 900px) {
+  .charts-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  }
 }
 
-/* Footer */
+/* ------------------------------------------------------------------- FOOTER */
 .footer {
   border-top: 1px solid var(--border);
-  margin-top: var(--space-10);
-  padding: var(--space-6);
+  margin-top: var(--sp-10);
+  padding: var(--sp-6);
   text-align: center;
   color: var(--text-tertiary);
-  font-size: var(--text-xs);
+  font-size: var(--fs-12);
+}
+.footer div + div {
+  margin-top: var(--sp-1);
 }

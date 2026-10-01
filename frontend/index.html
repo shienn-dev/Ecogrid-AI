@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="api-base" content="" />
   <title>EcoGrid AI — Energy Management & Analytics</title>
-  <meta name="description" content="EcoGrid AI membantu Anda memahami konsumsi energi, biaya, jejak karbon, dan rekomendasi penghematan rumah tangga secara profesional." />
+  <meta name="description" content="Analitik konsumsi listrik rumah tangga: kWh, biaya PLN, emisi karbon, peringkat perangkat, dan simulasi panel surya." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" referrerpolicy="no-referrer" />
@@ -15,231 +15,210 @@
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/dashboard.css" />
   <link rel="stylesheet" href="css/responsive.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f766e'/><text x='50' y='58' font-size='48' text-anchor='middle' fill='white' font-family='sans-serif'>⚡</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230f766e'/><path d='M55 18 32 54h16l-3 28 23-36H52z' fill='white'/></svg>">
 </head>
 <body>
-  <!-- Topbar -->
   <header class="topbar" role="banner">
     <div class="topbar-inner">
-      <a class="brand" href="#" aria-label="EcoGrid AI Home">
+      <a class="brand" href="#" aria-label="EcoGrid AI">
         <span class="brand-mark"><i class="fa-solid fa-bolt"></i></span>
         <span>
           <span class="brand-text">EcoGrid AI</span>
           <span class="brand-sub">Energy Management</span>
         </span>
       </a>
-      <nav class="nav" aria-label="Primary">
+      <nav class="nav" aria-label="Navigasi utama">
         <a class="nav-link" href="#" aria-current="page">Dashboard</a>
-        <a class="nav-link" href="#analytics">Analytics <span class="nav-badge">Live</span></a>
-        <a class="nav-link" href="#solar">Solar <span class="nav-badge">Baru</span></a>
+        <a class="nav-link" href="#analytics">Analitik</a>
+        <a class="nav-link" href="#solar">Surya</a>
         <a class="nav-link" href="#history">Riwayat</a>
-        <a class="nav-link" href="https://github.com" target="_blank" rel="noreferrer">Docs</a>
       </nav>
     </div>
   </header>
 
-  <!-- Page head -->
   <div class="page-head">
     <h1 class="page-title">Dashboard Energi Rumah Tangga</h1>
-    <p class="page-desc">Kelola perangkat, pahami konsumsi, biaya, dan jejak karbon Anda dalam satu tampilan profesional. Data-first, akurat, dan dapat ditindaklanjuti.</p>
+    <p class="page-desc">Hitung konsumsi, biaya PLN, dan emisi karbon dari perangkat Anda — lalu lihat mana yang paling boros dan apa yang bisa diperbaiki.</p>
   </div>
 
   <main class="container" id="top">
-    <!-- TOP: Device Config (wide) + Solar side, History di bawah Device -->
+    <!-- Input region: the user's job first -->
     <section class="top-config-grid" aria-label="Konfigurasi">
-      <!-- Left stack: Device + History (isi blank space) -->
-      <div class="left-stack" style="display:flex; flex-direction:column; gap:16px; min-width:0">
-        <!-- Device Config — melebar kesamping, slider -->
-        <div class="card device-config-wide" aria-labelledby="config-heading">
+      <div class="left-stack">
+        <div class="card" aria-labelledby="config-heading">
           <div class="card-pad">
             <div class="card-header">
-              <h2 id="config-heading" class="card-title"><i class="fa-solid fa-sliders"></i> Konfigurasi Perangkat</h2>
-              <span class="card-subtitle">Geser untuk lihat semua — 2–3 terlihat</span>
+              <h2 id="config-heading" class="card-title"><i class="fa-solid fa-sliders"></i> Perangkat</h2>
+              <span class="card-subtitle">Geser untuk melihat semua</span>
             </div>
-            <p class="help" style="margin-bottom:12px">Tambahkan perangkat, atur daya dan jam. Daftar melebar kesamping, geser/scroll untuk melihat semua perangkat.</p>
 
             <form id="energy-form" novalidate>
-              <!-- Slider container -->
               <div class="device-slider-wrap">
-                <button type="button" class="slider-nav slider-prev" aria-label="Geser kiri" onclick="document.getElementById('device-list').scrollBy({left:-360,behavior:'smooth'})"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" class="slider-nav" aria-label="Geser ke kiri" onclick="document.getElementById('device-list').scrollBy({left:-300,behavior:'smooth'})"><i class="fa-solid fa-chevron-left"></i></button>
                 <div id="device-list" class="device-slider" role="list" aria-label="Daftar perangkat"></div>
-                <button type="button" class="slider-nav slider-next" aria-label="Geser kanan" onclick="document.getElementById('device-list').scrollBy({left:360,behavior:'smooth'})"><i class="fa-solid fa-chevron-right"></i></button>
+                <button type="button" class="slider-nav" aria-label="Geser ke kanan" onclick="document.getElementById('device-list').scrollBy({left:300,behavior:'smooth'})"><i class="fa-solid fa-chevron-right"></i></button>
               </div>
 
-              <div style="display:flex; gap:8px; margin-top:14px; align-items:center; flex-wrap:wrap">
-                <button type="button" id="btn-add-device" class="btn btn-secondary" style="flex:1">
-                  <i class="fa-solid fa-plus"></i> Tambah Perangkat
+              <div class="row" style="gap:var(--sp-2); margin-top:var(--sp-3); flex-wrap:wrap">
+                <button type="button" id="btn-add-device" class="btn btn-secondary" style="flex:1; min-width:150px">
+                  <i class="fa-solid fa-plus"></i> Tambah
                 </button>
-                <button type="button" id="btn-sample" class="btn btn-ghost" style="flex:1"><i class="fa-solid fa-wand-magic-sparkles"></i> Contoh</button>
-                <button type="submit" id="hitung-btn" class="btn btn-primary" style="flex:1.2"><i class="fa-solid fa-calculator"></i> Hitung</button>
+                <button type="button" id="btn-sample" class="btn btn-ghost" style="flex:1; min-width:110px">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> Contoh
+                </button>
+                <button type="submit" id="hitung-btn" class="btn btn-primary" style="flex:1.4; min-width:140px">
+                  <i class="fa-solid fa-calculator"></i> Hitung
+                </button>
               </div>
 
-              <div class="field" style="margin-top:14px; max-width:280px">
+              <div class="field" style="margin-top:var(--sp-4); max-width:300px">
                 <label class="label" for="tariff-preset">Golongan tarif PLN</label>
-                <select id="tariff-preset" class="input" style="padding-left:12px">
+                <select id="tariff-preset" class="input">
                   <option value="1300VA" selected>R-1/TR 1300 VA — Rp 1.444,70</option>
                 </select>
-                <div class="help">Sumber: PLN Tarif Adjustment. Angka lain dapat diverifikasi di situs PLN.</div>
+                <p class="help">Sumber: PLN Tarif Adjustment.</p>
               </div>
-
-              <p class="help" style="margin-top:10px"><i class="fa-solid fa-circle-info"></i> Validasi ketat: nama wajib, Watt &gt;0, Jam 0.01–24. Maks 50 perangkat.</p>
             </form>
           </div>
         </div>
 
-        <!-- History — pindah ke bawah konfigurasi untuk isi blank space -->
         <div class="card" id="history">
           <div class="card-pad">
             <div class="card-header">
               <h2 class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</h2>
               <button type="button" class="btn btn-ghost btn-sm" onclick="localStorage.removeItem('ecogrid_history_v1'); location.reload()">Hapus</button>
             </div>
-            <div id="history-empty" class="empty" style="padding:24px 0">
+            <div id="history-empty" class="empty" style="padding:var(--sp-6) 0">
               <div class="empty-icon"><i class="fa-solid fa-inbox"></i></div>
-              <h3 style="font-size:14px">Belum ada riwayat</h3>
-              <p style="font-size:13px">Hasil perhitungan dengan <em>Simpan otomatis</em> akan muncul di sini.</p>
+              <h3>Belum ada riwayat</h3>
+              <p>Setiap perhitungan tersimpan otomatis di sini.</p>
             </div>
-            <div id="history-list" style="display:flex;flex-direction:column;gap:10px; max-height:260px; overflow-y:auto"></div>
+            <div id="history-list" style="max-height:280px; overflow-y:auto"></div>
           </div>
         </div>
       </div>
 
-      <!-- Side: Solar only (biar ada space buat output) -->
       <div class="side-stack">
-        <!-- Solar quick -->
         <div class="card" id="solar">
           <div class="card-pad">
             <div class="card-header">
               <h2 class="card-title"><i class="fa-solid fa-solar-panel"></i> Simulasi Surya</h2>
               <span class="card-subtitle">Estimasi</span>
             </div>
-            <div id="solar-panel">
-              <div class="field">
-                <label class="label" for="solar-roof">Luas atap (m²)</label>
-                <div class="input-wrap">
-                  <i class="fa-solid fa-ruler-combined input-icon"></i>
-                  <input id="solar-roof" class="input" type="number" min="1" max="1000" step="1" value="40" />
-                  <span class="input-badge">m²</span>
-                </div>
+
+            <div class="field">
+              <label class="label" for="solar-roof">Luas atap</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-ruler-combined input-icon"></i>
+                <input id="solar-roof" class="input" type="number" min="1" max="1000" step="1" value="40" />
+                <span class="input-badge">m²</span>
               </div>
-              <div class="field">
-                <label class="label" for="solar-eff">Efisiensi panel</label>
-                <select id="solar-eff" class="input" style="padding-left:12px">
-                  <option value="0.15">15% — Polycrystalline</option>
-                  <option value="0.18">18% — Mono Standar</option>
-                  <option value="0.20" selected>20% — Mono Premium</option>
-                  <option value="0.22">22% — High Efficiency</option>
-                </select>
-              </div>
-              <div class="field">
-                <label class="label" for="solar-city">Lokasi (Peak Sun Hours)</label>
-                <select id="solar-city" class="input" style="padding-left:12px">
-                  <option value="4.5" selected>Jakarta — 4.5 kWh/m²/hari</option>
-                  <option value="5.0">Surabaya / Denpasar — 5.0</option>
-                  <option value="4.4">Medan / Bandung — 4.4</option>
-                  <option value="5.1">Makassar — 5.1</option>
-                  <option value="5.5">Kupang — 5.5</option>
-                </select>
-                <div class="help">Sumber: Global Solar Atlas (rata-rata jangka panjang)</div>
-              </div>
-              <div class="field">
-                <label class="label" for="solar-sun">Peak Sun Hours (manual)</label>
-                <div class="input-wrap">
-                  <i class="fa-solid fa-sun input-icon"></i>
-                  <input id="solar-sun" class="input" type="number" min="1" max="10" step="0.1" value="4.5" />
-                  <span class="input-badge">jam</span>
-                </div>
-              </div>
-              <button type="button" id="btn-solar" class="btn btn-secondary btn-block"><i class="fa-solid fa-bolt"></i> Hitung Potensi Surya</button>
-              <div id="solar-result" style="display:none; margin-top:16px"></div>
-              <details style="margin-top:12px">
-                <summary class="help" style="cursor:pointer">Asumsi perhitungan &amp; sumber</summary>
-                <p class="help" style="margin-top:8px">
-                  <strong>kWp</strong> = luas atap × 0.85 (area terpakai) × efisiensi<br>
-                  <strong>kWh/hari</strong> = kWp × peak sun hours × 0.75 (Performance Ratio)
-                </p>
-                <p class="help" style="margin-top:6px">
-                  Performance Ratio 0.75 menutup rugi inverter, kabel, suhu, kotoran, dan shading
-                  (NREL PVWatts / IEC 61724). Estimasi — belum memodelkan kemiringan atap,
-                  arah hadap, atau variasi cuaca musiman.
-                </p>
-              </details>
             </div>
+
+            <div class="field">
+              <label class="label" for="solar-eff">Efisiensi panel</label>
+              <select id="solar-eff" class="input">
+                <option value="0.15">15% — Polycrystalline</option>
+                <option value="0.18">18% — Mono Standar</option>
+                <option value="0.20" selected>20% — Mono Premium</option>
+                <option value="0.22">22% — High Efficiency</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="label" for="solar-city">Lokasi</label>
+              <select id="solar-city" class="input">
+                <option value="4.5" selected>Jakarta — 4.5 jam</option>
+                <option value="5.0">Surabaya / Denpasar — 5.0</option>
+                <option value="4.4">Medan / Bandung — 4.4</option>
+                <option value="5.1">Makassar — 5.1</option>
+                <option value="5.5">Kupang — 5.5</option>
+              </select>
+              <p class="help">Peak sun hours, sumber Global Solar Atlas.</p>
+            </div>
+
+            <button type="button" id="btn-solar" class="btn btn-secondary btn-block">
+              <i class="fa-solid fa-bolt"></i> Hitung
+            </button>
+
+            <div id="solar-result" style="display:none; margin-top:var(--sp-4)"></div>
+
+            <details style="margin-top:var(--sp-3)">
+              <summary class="help" style="cursor:pointer; color:var(--text-secondary)">Asumsi perhitungan</summary>
+              <div class="help" style="margin-top:var(--sp-2)">
+                <strong>kWp</strong> = luas × 0.85 (area terpakai) × efisiensi<br>
+                <strong>kWh/hari</strong> = kWp × sun hours × 0.75 (Performance Ratio)
+                <br><br>
+                PR menutup rugi inverter, kabel, suhu, kotoran, dan shading
+                (NREL PVWatts / IEC 61724).
+              </div>
+            </details>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- RESULTS — pindah ke bawah konfigurasi + riwayat -->
-    <section class="results-below" aria-labelledby="results-heading" aria-live="polite" style="margin-top:16px">
-      <h2 id="results-heading" class="sr-only">Hasil Analitik</h2>
+    <!-- Results region -->
+    <section aria-labelledby="results-heading" aria-live="polite">
+      <h2 id="results-heading" class="sr-only">Hasil analitik</h2>
       <div id="results-live" class="sr-only" aria-live="polite"></div>
 
-      <!-- Empty -->
       <div id="results-placeholder" class="card">
         <div class="empty">
           <div class="empty-icon"><i class="fa-solid fa-chart-line"></i></div>
-          <h3>Belum Ada Hasil Perhitungan</h3>
-          <p>Masukkan data perangkat di panel kiri dan klik <strong>Hitung</strong> untuk melihat KPI, peringkat, analitik, dan rekomendasi. Coba <button type="button" id="btn-sample-inline" class="btn btn-ghost btn-sm" style="display:inline-flex; padding:4px 8px; vertical-align:middle" onclick="document.getElementById('btn-sample').click()">Muat Contoh</button></p>
-          <div class="flow" style="margin-top:24px; text-align:left">
-            <div class="flow-step"><i class="fa-solid fa-house"></i><span>Rumah</span></div>
-            <i class="fa-solid fa-chevron-right flow-arrow"></i>
-            <div class="flow-step"><i class="fa-solid fa-bolt"></i><span>Total</span></div>
-            <i class="fa-solid fa-chevron-right flow-arrow"></i>
-            <div class="flow-step"><i class="fa-solid fa-layer-group"></i><span>Perangkat</span></div>
-            <i class="fa-solid fa-chevron-right flow-arrow"></i>
-            <div class="flow-step"><i class="fa-solid fa-coins"></i><span>Biaya</span></div>
-            <i class="fa-solid fa-chevron-right flow-arrow"></i>
-            <div class="flow-step"><i class="fa-solid fa-cloud"></i><span>CO₂</span></div>
-            <i class="fa-solid fa-chevron-right flow-arrow"></i>
-            <div class="flow-step"><i class="fa-solid fa-lightbulb"></i><span>Insight</span></div>
-          </div>
+          <h3>Belum ada hasil</h3>
+          <p>Isi perangkat di atas lalu tekan <strong>Hitung</strong> untuk melihat konsumsi, biaya, emisi, peringkat, dan rekomendasi.</p>
+          <button type="button" class="btn btn-secondary btn-sm" style="margin-top:var(--sp-4)" onclick="document.getElementById('btn-sample').click()">
+            Muat data contoh
+          </button>
         </div>
       </div>
 
-      <!-- Results -->
       <div id="results" style="display:none">
-        <!-- KPI -->
-        <div id="kpi-grid" class="kpi-grid" role="region" aria-label="Key metrics"></div>
-        <div id="carbon-equivalents" aria-live="polite"></div>
+        <div id="kpi-grid" class="kpi-grid" role="region" aria-label="Metrik utama"></div>
+        <div id="carbon-equivalents" style="margin-top:var(--gap-card)"></div>
 
-        <!-- Analytics -->
-        <div id="analytics" class="analytics-grid" style="margin-top:16px">
-          <!-- Ranking -->
+        <div id="analytics" class="analytics-grid" style="margin-top:var(--gap-card)">
           <div class="card">
             <div class="card-pad">
               <div class="card-header">
-                <h3 class="card-title"><i class="fa-solid fa-ranking-star"></i> Peringkat Konsumsi</h3>
-                <span class="card-subtitle">Kontribusi bulanan</span>
+                <h3 class="card-title"><i class="fa-solid fa-ranking-star"></i> Peringkat konsumsi</h3>
+                <span class="card-subtitle">kWh per bulan</span>
               </div>
               <div id="ranking-list" class="ranking-list"></div>
-              <div id="energy-flow" class="flow" style="margin-top:16px">
+              <div id="energy-flow" class="flow" style="margin-top:var(--sp-4)">
                 <div class="flow-step"><i class="fa-solid fa-house"></i><span>Rumah</span></div>
-                <i class="fa-solid fa-chevron-right flow-arrow"></i>
-                <div class="flow-step"><i class="fa-solid fa-bolt"></i><span>Total Energi</span></div>
-                <i class="fa-solid fa-chevron-right flow-arrow"></i>
+                <i class="fa-solid fa-arrow-right flow-arrow"></i>
+                <div class="flow-step"><i class="fa-solid fa-bolt"></i><span>Energi</span></div>
+                <i class="fa-solid fa-arrow-right flow-arrow"></i>
                 <div class="flow-step"><i class="fa-solid fa-plug"></i><span>Perangkat</span></div>
-                <i class="fa-solid fa-chevron-right flow-arrow"></i>
+                <i class="fa-solid fa-arrow-right flow-arrow"></i>
                 <div class="flow-step"><i class="fa-solid fa-coins"></i><span>Biaya</span></div>
-                <i class="fa-solid fa-chevron-right flow-arrow"></i>
-                <div class="flow-step"><i class="fa-solid fa-cloud"></i><span>CO₂</span></div>
-                <i class="fa-solid fa-chevron-right flow-arrow"></i>
+                <i class="fa-solid fa-arrow-right flow-arrow"></i>
+                <div class="flow-step"><i class="fa-solid fa-cloud"></i><span>Emisi</span></div>
+                <i class="fa-solid fa-arrow-right flow-arrow"></i>
                 <div class="flow-step"><i class="fa-solid fa-lightbulb"></i><span>Insight</span></div>
               </div>
             </div>
           </div>
 
-          <!-- Score + Insights -->
-          <div style="display:flex; flex-direction:column; gap:16px">
-            <div class="score-card">
-              <div class="score-label">Energy Score</div>
-              <div id="energy-score-val" class="score-value">—</div>
-              <div id="energy-score-category" class="score-badge good">—</div>
-              <div class="score-bar"><div id="score-bar-fill" class="score-bar-fill" style="width:0%"></div></div>
-              <div class="score-breakdown">
-                <div class="help" style="text-align:left">
-                  <strong>Penilaian:</strong> Excellent 90–100 · Good 70–89 · Average 50–69 · Needs Improvement &lt;50<br>
-                  Berdasarkan: volume bulanan, rata jam, beban berat &gt;500W, dominasi &gt;50%.
+          <div class="stack">
+            <div class="score-card" id="score-card">
+              <div class="score-ring">
+                <svg width="88" height="88" viewBox="0 0 88 88" aria-hidden="true">
+                  <circle class="score-ring-track" cx="44" cy="44" r="38"></circle>
+                  <circle class="score-ring-value" id="score-ring" cx="44" cy="44" r="38"
+                          stroke-dasharray="238.76" stroke-dashoffset="238.76"></circle>
+                </svg>
+                <div class="score-ring-text"><span id="energy-score-val">—</span></div>
+              </div>
+              <div class="score-body">
+                <div class="score-label">Energy Score</div>
+                <span class="score-badge good" id="energy-score-category">—</span>
+                <div class="score-help">
+                  <strong>A</strong> 90–100 · <strong>B</strong> 70–89 · <strong>C</strong> 50–69 ·
+                  <strong>D</strong> 30–49 · <strong>E</strong> &lt;30<br>
+                  Dari volume bulanan, rata-rata jam, beban &gt;500 W, dan dominasi beban.
                 </div>
               </div>
             </div>
@@ -247,7 +226,8 @@
             <div class="card">
               <div class="card-pad">
                 <div class="card-header">
-                  <h3 class="card-title"><i class="fa-solid fa-square-poll-vertical"></i> Rekomendasi & Analisis</h3>
+                  <h3 class="card-title"><i class="fa-solid fa-square-poll-vertical"></i> Rekomendasi</h3>
+                  <span class="card-subtitle" id="insight-count"></span>
                 </div>
                 <div id="insights-container" class="insights-stack"></div>
               </div>
@@ -255,68 +235,71 @@
           </div>
         </div>
 
-        <!-- Charts -->
-        <div class="charts-grid" style="margin-top:16px">
+        <div class="charts-grid" style="margin-top:var(--gap-card)">
           <div class="chart-card">
             <div class="chart-head">
               <div>
-                <div class="chart-title">Konsumsi per Perangkat</div>
-                <div class="chart-subtitle">kWh / bulan — horizontal bar</div>
+                <div class="chart-title">Konsumsi per perangkat</div>
+                <div class="chart-subtitle">Diurutkan dari yang terbesar</div>
               </div>
-              <span class="badge-rank"><i class="fa-solid fa-chart-bar"></i> Chart.js</span>
             </div>
-            <div class="chart-wrap"><canvas id="chart-contribution" aria-label="Grafik kontribusi perangkat" role="img"></canvas></div>
-            <div class="chart-fallback">Fallback tabel tersedia di bawah. Data tabular tersedia untuk screen reader.</div>
+            <div class="chart-wrap"><canvas id="chart-contribution" role="img" aria-label="Grafik batang konsumsi per perangkat"></canvas></div>
           </div>
+
           <div class="chart-card">
             <div class="chart-head">
               <div>
-                <div class="chart-title">Distribusi Konsumsi</div>
-                <div class="chart-subtitle">Kontribusi % — doughnut</div>
+                <div class="chart-title">Distribusi konsumsi</div>
+                <div class="chart-subtitle">Porsi tiap perangkat</div>
               </div>
             </div>
-            <div class="chart-wrap"><canvas id="chart-donut" aria-label="Grafik distribusi konsumsi" role="img"></canvas></div>
+            <div class="chart-wrap donut-wrap">
+              <canvas id="chart-donut" role="img" aria-label="Grafik donat distribusi konsumsi"></canvas>
+              <div class="donut-center">
+                <div class="donut-center-value" id="donut-total">—</div>
+                <div class="donut-center-label">kWh/bln</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="chart-card" style="margin-top:16px">
+        <div class="chart-card" style="margin-top:var(--gap-card)">
           <div class="chart-head">
             <div>
-              <div class="chart-title">Perbandingan Periode</div>
-              <div class="chart-subtitle">Harian · Bulanan · Tahunan (kWh)</div>
+              <div class="chart-title">Perbandingan periode</div>
+              <div class="chart-subtitle">Harian · Bulanan · Tahunan</div>
             </div>
           </div>
-          <div class="chart-wrap" style="height:240px"><canvas id="chart-period" aria-label="Grafik perbandingan periode" role="img"></canvas></div>
+          <div class="chart-wrap"><canvas id="chart-period" role="img" aria-label="Grafik perbandingan periode"></canvas></div>
         </div>
 
-        <!-- What-if -->
-        <div id="whatif-wrap" class="card" style="margin-top:16px; display:none">
+        <div id="whatif-wrap" class="card" style="margin-top:var(--gap-card); display:none">
           <div class="card-pad">
             <div class="card-header">
-              <h3 class="card-title"><i class="fa-solid fa-flask"></i> What-if Simulation</h3>
+              <h3 class="card-title"><i class="fa-solid fa-flask"></i> Simulasi what-if</h3>
               <span class="card-subtitle">Kurangi pemakaian perangkat terboros</span>
             </div>
             <div class="whatif">
               <div class="whatif-head">
-                <label for="whatif-slider" class="label" style="margin:0">Kurangi <span id="whatif-device-name">perangkat terboros</span> sebesar</label>
+                <label for="whatif-slider" class="label" style="margin:0">
+                  Kurangi <span id="whatif-device-name">perangkat terboros</span>
+                </label>
                 <strong id="whatif-value" class="tabular">2 jam / hari</strong>
               </div>
               <input id="whatif-slider" class="range" type="range" min="1" max="6" value="2" step="1" />
-              <div id="whatif-delta" class="delta" style="margin-top:10px"></div>
-              <p class="help" style="margin-top:8px">Simulasi membandingkan <strong>Saat ini</strong> vs <strong>Simulasi</strong>. Tidak menyimpan otomatis.</p>
+              <div id="whatif-delta" class="delta" style="margin-top:var(--sp-3)"></div>
             </div>
           </div>
         </div>
 
-        <!-- Detailed table -->
-        <div class="card" style="margin-top:16px" data-collapsible>
+        <div class="card" style="margin-top:var(--gap-card)" data-collapsible>
           <button type="button" class="collapsible-trigger" aria-expanded="false">
-            <span><i class="fa-solid fa-table"></i> Rincian Detail (Harian / Bulanan / Tahunan)</span>
+            <span><i class="fa-solid fa-table"></i> Rincian detail</span>
             <i class="fa-solid fa-chevron-down"></i>
           </button>
           <div class="collapsible-panel" data-open="false">
             <div class="table-wrap">
-              <table class="table" aria-label="Rincian konsumsi, biaya, emisi">
+              <table class="table" aria-label="Rincian konsumsi, biaya, dan emisi">
                 <thead>
                   <tr>
                     <th>Periode</th>
@@ -335,26 +318,22 @@
   </main>
 
   <footer class="footer">
-    <div>© 2026 EcoGrid AI — Energy Management & Decision Support · Data diperbarui real-time · <a href="#top">Kembali ke atas</a></div>
-    <div style="margin-top:6px">Honest engineering: rule-based insights, deterministic simulations — no fake AI claims.</div>
+    <div>© 2026 EcoGrid AI — Energy Management &amp; Decision Support</div>
+    <div>Rekomendasi berbasis aturan dan simulasi deterministik — bukan machine learning.</div>
   </footer>
 
-  <!-- Auto API base for dev (frontend 5500/8000 → backend 5000) -->
   <script>
     if (!window.__ECG_API_BASE) {
       const p = window.location.port;
       if (p && p !== "5000") window.__ECG_API_BASE = "http://127.0.0.1:5000";
     }
   </script>
-  <!-- Toast stack moved to body via JS -->
   <script type="module" src="js/dashboard.js"></script>
   <script type="module">
-    // Reference data + solar wiring. Runs independently of dashboard.js.
     import { api } from "./js/api/client.js";
     import { fmtRupiah, fmtKwh } from "./js/utils/format.js";
     import { showToast } from "./js/utils/dom.js";
 
-    // Populate tariff presets from backend (keeps sourced data in one place)
     async function loadTariffs() {
       const sel = document.getElementById("tariff-preset");
       if (!sel) return;
@@ -364,108 +343,94 @@
         sel.innerHTML = Object.entries(tariffs)
           .map(([key, t]) => {
             const rp = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2 }).format(t.tariff);
-            const selected = key === "1300VA" ? " selected" : "";
-            return `<option value="${key}" data-tariff="${t.tariff}"${selected}>${t.label} — Rp ${rp}</option>`;
+            return `<option value="${key}" data-tariff="${t.tariff}"${key === "1300VA" ? " selected" : ""}>${t.label} — Rp ${rp}</option>`;
           })
           .join("");
-      } catch (e) {
-        console.warn("Tariff presets unavailable", e);
-      }
+      } catch { /* presets optional; default option remains */ }
     }
+
     function initSolar() {
       const btn = document.getElementById("btn-solar");
       const res = document.getElementById("solar-result");
       if (!btn || !res) return;
-      // City preset drives the manual PSH field (source: Global Solar Atlas)
+
       const citySel = document.getElementById("solar-city");
-      const sunInput = document.getElementById("solar-sun");
-      if (citySel && sunInput) {
-        citySel.addEventListener("change", () => { sunInput.value = citySel.value; });
-      }
+      const roofInput = document.getElementById("solar-roof");
+
       btn.addEventListener("click", async () => {
-        const roof = parseFloat(document.getElementById("solar-roof")?.value);
-        const eff = parseFloat(document.getElementById("solar-eff")?.value);
-        const sun = parseFloat(document.getElementById("solar-sun")?.value);
-        if (!roof || roof <= 0 || roof > 1000) return showToast("Luas atap 1–1000 m²", "error");
-        if (!eff || eff < 0.05 || eff > 0.30) return showToast("Efisiensi 0.05–0.30", "error");
-        if (!sun || sun < 1 || sun > 10) return showToast("Sun hours 1–10", "error");
+        const roof = parseFloat(roofInput.value);
+        const eff = parseFloat(document.getElementById("solar-eff").value);
+        const sun = parseFloat(citySel.value);
+        if (!roof || roof <= 0 || roof > 1000) return showToast("Luas atap harus 1–1000 m²", "error");
 
         btn.disabled = true;
-        const old = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghitung...';
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghitung';
 
-        // Pass current household usage (if a calculation has run) so the solar
-        // result can show how much of the household demand it covers.
         const usage = window.__ecogrid?.getState()?.result?.total_monthly_kwh;
 
         try {
-          const data = await api.simulateSolar({
+          const { data } = await api.simulateSolar({
             roof_area: roof,
             efficiency: eff,
             sun_hours: sun,
             household_monthly_kwh: usage || undefined,
           });
-          const d = data.data;
-          res.style.display = "block";
+          const d = data;
 
-          const offsetBlock = d.offset
-            ? `<div class="kpi" style="padding:16px; --kpi-accent: var(--primary)">
-                 <div class="kpi-label">Cakupan Kebutuhan</div>
-                 <div class="kpi-value" style="font-size:1.25rem">${d.offset.coverage_percent}% <span style="font-size:0.6em;color:var(--text-tertiary)">terpenuhi</span></div>
-                 <div class="kpi-sub">${d.offset.remaining_monthly_kwh} kWh/bln masih dari PLN</div>
+          const offset = d.offset
+            ? `<div class="solar-kpi">
+                 <div class="solar-kpi-label">Cakupan kebutuhan</div>
+                 <div class="solar-kpi-value">${d.offset.coverage_percent}<small>%</small></div>
+                 <div class="solar-kpi-sub">${fmtKwh(d.offset.remaining_monthly_kwh)} kWh/bln masih dari PLN</div>
                </div>`
             : "";
 
           res.innerHTML = `
-            <div class="kpi-grid" style="grid-template-columns:1fr 1fr">
-              <div class="kpi" style="padding:16px">
-                <div class="kpi-label">Kapasitas</div>
-                <div class="kpi-value" style="font-size:1.25rem">${d.system_kwp.toFixed(2)} <span style="font-size:0.6em;color:var(--text-tertiary)">kWp</span></div>
-                <div class="kpi-sub">Area terpakai ${d.usable_area_m2} m² dari ${roof} m²</div>
+            <div class="solar-kpis">
+              <div class="solar-kpi">
+                <div class="solar-kpi-label">Kapasitas</div>
+                <div class="solar-kpi-value">${d.system_kwp.toFixed(2)}<small>kWp</small></div>
+                <div class="solar-kpi-sub">${d.usable_area_m2} m² terpakai</div>
               </div>
-              <div class="kpi" style="padding:16px">
-                <div class="kpi-label">Generasi</div>
-                <div class="kpi-value" style="font-size:1.25rem">${fmtKwh(d.daily_generation)} <span style="font-size:0.6em;color:var(--text-tertiary)">kWh/hari</span></div>
-                <div class="kpi-sub">${fmtKwh(d.monthly_generation)} kWh/bln · ${fmtKwh(d.yearly_generation)} kWh/thn</div>
+              <div class="solar-kpi">
+                <div class="solar-kpi-label">Produksi</div>
+                <div class="solar-kpi-value">${fmtKwh(d.daily_generation)}<small>kWh/hari</small></div>
+                <div class="solar-kpi-sub">${fmtKwh(d.monthly_generation)} /bulan</div>
               </div>
-              <div class="kpi" style="padding:16px">
-                <div class="kpi-label">Hemat Biaya</div>
-                <div class="kpi-value" style="font-size:1.1rem">${fmtRupiah(d.estimated_saving)} <span style="font-size:0.6em;color:var(--text-tertiary)">/bln</span></div>
-                <div class="kpi-sub">~ ${fmtRupiah(d.yearly_saving)} /tahun</div>
+              <div class="solar-kpi">
+                <div class="solar-kpi-label">Hemat biaya</div>
+                <div class="solar-kpi-value" style="font-size:var(--fs-14)">${fmtRupiah(d.estimated_saving)}</div>
+                <div class="solar-kpi-sub">per bulan</div>
               </div>
-              <div class="kpi" style="padding:16px">
-                <div class="kpi-label">Kurangi CO₂</div>
-                <div class="kpi-value" style="font-size:1.1rem">${(d.carbon_reduction_kg || 0).toFixed(1)} <span style="font-size:0.6em;color:var(--text-tertiary)">kg/bln</span></div>
-                <div class="kpi-sub">≈ ${((d.yearly_carbon_reduction_kg) || 0).toFixed(0)} kg/tahun</div>
+              <div class="solar-kpi">
+                <div class="solar-kpi-label">Balik modal</div>
+                <div class="solar-kpi-value">${d.payback_years != null ? d.payback_years.toFixed(1) : "—"}<small>tahun</small></div>
+                <div class="solar-kpi-sub">${fmtRupiah(d.system_cost_estimate)}</div>
               </div>
-              ${offsetBlock}
-              <div class="kpi" style="padding:16px">
-                <div class="kpi-label">Balik Modal</div>
-                <div class="kpi-value" style="font-size:1.1rem">${d.payback_years != null ? d.payback_years.toFixed(1) + " <span style='font-size:0.6em;color:var(--text-tertiary)'>tahun</span>" : "—"}</div>
-                <div class="kpi-sub">Estimasi biaya sistem ${fmtRupiah(d.system_cost_estimate)}</div>
-              </div>
+              ${offset}
             </div>
-            <p class="help" style="margin-top:12px">
-              Performance Ratio <strong>${d.assumptions.performance_ratio}</strong> ·
-              area terpakai <strong>${d.assumptions.usable_area_factor}</strong> ·
-              ${d.assumptions.note}
+            <p class="help" style="margin-top:var(--sp-3)">
+              Performance Ratio ${d.assumptions.performance_ratio} · area terpakai
+              ${d.assumptions.usable_area_factor} · estimasi, bukan pengukuran presisi.
             </p>
           `;
-          res.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          res.style.display = "block";
         } catch (e) {
-          showToast(e.message || "Gagal simulasi surya", "error");
+          showToast(e.message || "Gagal menghitung potensi surya", "error");
         } finally {
           btn.disabled = false;
-          btn.innerHTML = old;
+          btn.innerHTML = original;
         }
       });
     }
+
     function boot() {
       loadTariffs();
       initSolar();
     }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', boot);
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", boot);
     } else {
       boot();
     }

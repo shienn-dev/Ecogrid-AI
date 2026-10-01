@@ -1,22 +1,117 @@
-/* Responsive tweaks */
-@media (max-width: 1023px) {
-  .topbar-inner { padding: 0 16px; }
-  .nav { display: none; } /* hide nav on mobile, can be burger later */
-  .container { padding: 16px; }
-  .page-head { padding: 0 16px; }
+/* Responsive — reflow, do not shrink */
+
+@media (max-width: 1099px) {
+  .container,
+  .page-head {
+    padding-left: var(--sp-4);
+    padding-right: var(--sp-4);
+  }
+  .topbar-inner {
+    padding: 0 var(--sp-4);
+  }
+  /* Side stack should not stretch to a lonely full-height column */
+  .side-stack {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    align-items: start;
+  }
 }
 
-@media (max-width: 640px) {
-  .card-pad { padding: 16px; }
-  .kpi-value { font-size: 1.4rem; }
-  .score-value { font-size: 2.4rem; }
-  .flow { flex-direction: column; }
-  .flow-arrow { transform: rotate(90deg); }
-  .table { font-size: 13px; }
-  .table th, .table td { padding: 8px 10px; }
+@media (max-width: 720px) {
+  .nav {
+    display: none;
+  }
+
+  .container {
+    padding: var(--sp-4);
+  }
+  .page-head {
+    padding: var(--sp-4) var(--sp-4) var(--sp-3);
+  }
+  .page-title {
+    font-size: var(--fs-20);
+  }
+
+  .card-pad {
+    padding: var(--sp-4);
+  }
+
+  .kpi {
+    padding: var(--sp-4);
+    min-height: 0;
+  }
+  .kpi--primary .kpi-value {
+    font-size: var(--fs-30);
+  }
+  .kpi-value {
+    font-size: var(--fs-20);
+  }
+
+  .score-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-4);
+  }
+
+  .flow-arrow {
+    display: none;
+  }
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2);
+  }
+  .flow-step {
+    min-width: 0;
+  }
+
+  .chart-card {
+    padding: var(--sp-4);
+  }
+
+  .ranking-item {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    gap: var(--sp-2);
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 10px;
+  }
 }
 
-@media (max-width: 380px) {
-  .kpi-grid { gap: 12px; }
-  .kpi { padding: 14px; }
+@media (max-width: 420px) {
+  .container,
+  .page-head,
+  .topbar-inner {
+    padding-left: var(--sp-3);
+    padding-right: var(--sp-3);
+  }
+
+  .kpi-grid {
+    gap: var(--sp-3);
+  }
+
+  .solar-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .flow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-card {
+    padding: var(--sp-3);
+  }
+
+  /* Card subtitles are supporting text — drop them before letting them
+     push the header wider than the viewport. */
+  .card-subtitle,
+  .chart-subtitle {
+    display: none;
+  }
+
+  .score-card {
+    padding: var(--sp-4);
+  }
 }

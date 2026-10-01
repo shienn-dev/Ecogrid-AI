@@ -282,3 +282,49 @@ it changes in `backend/app/config.py` once.
 - Saving percentages are **typical ranges**, not guarantees; actual depends on device age, insulation, behaviour.
 - Tariff figures other than 1300 VA should be verified against the current ESDM regulation before production use.
 - No Indonesian-specific open dataset for per-device household load profiles was found; device benchmarks remain typical-value estimates.
+
+---
+
+## 12. Frontend Visual Research → Implementation
+
+Sources fetched and applied (previously only the *data* research was used;
+this section covers the *visual* layer):
+
+| Source | Guidance taken | Applied where |
+|---|---|---|
+| **IBM Carbon — Color palettes** `carbondesignsystem.com/data-visualization/color-palettes` | 14-colour categorical sequence (order matters for neighbouring contrast); monochromatic teal ramp for sequential data; alert palette red/orange/yellow/green for status only | `tokens.css` `--cat-1..14`, `--seq-1..8`, `--alert-*`; `charts.js` `categorical()` / `sequential()` |
+| **IBM Carbon — Chart anatomy** | Title, axes, ticks, *axis title*, legend, tooltip; keep the frame light; do not crowd the plot area | `charts.js` `axisOpts()` adds axis titles + unit labels; grid reduced to one hairline |
+| **IBM Carbon — Circular charts** | A slice below 1° is not rendered; past ~5 slices a donut stops being readable; use a big number for the total | `charts.js` `renderDonut()` caps at 5 + "Lainnya", legend right, `#donut-total` big number |
+| **IBM Carbon — Dashboards** | Strong hierarchy; most important data largest and highest contrast; limit metrics; consistent chart layout and legend position | `layout.css` `.kpi-grid` `1.25fr 1fr 1fr 1fr`; `.kpi--primary` gets the tinted surface and largest type |
+| **Refactoring UI** (Wathan/Schoger) | "Use fewer borders" / "define your shades up front" / "greys don't have to be grey" / "emulate a light source" / "establish a type scale" / "don't rely on colour alone" | 10-shade neutral ramp; borderless ranking list; single-hairline shadows; explicit `--fs-*` scale; alert palette pairs colour with an icon |
+| **Home Assistant — Energy dashboard** | Devices graph sorted by usage descending; `max_devices` with an "Other" bucket; gauge for a single normalised metric | `renderContribution()` sorts descending; donut "Lainnya" bucket; score rendered as a ring |
+
+### Bugs found and fixed by measuring the running page (Playwright)
+
+These were **not** visible from reading the source — only from rendering and measuring:
+
+1. **Horizontal overflow at ≤320 px.** Flex children default to `min-width:auto`, so the
+   device slider track pushed the whole document wider than the viewport
+   (`scrollWidth 350 > 320`). Fixed with `width:100% / min-width:0 / max-width:100%`
+   on both `.device-slider-wrap` and `.device-slider`. Now clean at 320/375/1024/1440.
+2. **`overflow:hidden` on `.card`** clipped the slider's scrollable area. Removed;
+   radius is honoured per-child instead.
+3. **Charts rendered zero pixels.** The `+esm` Chart.js build does *not* create a
+   `window.Chart` global, and the previous code mutated `options` then called
+   `.update()`, which silently did nothing for `indexAxis`. Rewritten to configure
+   `indexAxis` at construction. Verified by sampling canvas pixels:
+   24,491 / 33,125 / 36,015 painted pixels across the three charts.
+4. **Contrast verified programmatically**, not assumed: every text token measures
+   ≥4.83:1 on white (AA for body text). Primary `#111827` is 17.74:1.
+
+### Verified at four viewports
+
+| Viewport | Doc width | KPI columns | Chart pixels | Overflow |
+|---|---|---|---|---|
+| 1440 desktop | 1430 | 4 | 24,491 | none |
+| 1024 tablet | 1014 | 2 | 16,985 | none |
+| 375 mobile | 365 | 1 | 9,771 | none |
+| 320 small | 312 | 1 | 7,870 | none |
+
+Console errors: none. Full user flow exercised end to end (empty → sample → calculate →
+KPI → ranking → charts → score ring → insights → equivalents → what-if → solar).
